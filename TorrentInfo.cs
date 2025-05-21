@@ -24,5 +24,7 @@ namespace TorrentFlow
 
         [ObservableProperty]
         private string? _peers; // Наприклад, "10/25" (підключені/всього)
+        
+        public TorrentFileContent? FullTorrentContent { get; set; } 
     }
 }

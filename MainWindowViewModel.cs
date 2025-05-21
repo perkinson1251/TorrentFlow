@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -18,15 +20,36 @@ namespace TorrentFlow
         private string? _statusText;
 
         private TorrentFileParser _torrentFileParser;
+        private TrackerClient _trackerClient; // Додаємо клієнт трекера
+        private string _peerId; // Зберігаємо наш peer_id
+        private const ushort ListeningPort = 6881; // Приклад порту для прослуховування
 
         public MainWindowViewModel()
         {
             _torrents = new ObservableCollection<TorrentInfo>();
+            
             StatusText = "Готовий";
 
             _torrentFileParser = new TorrentFileParser();
+            _trackerClient = new TrackerClient(); // Ініціалізуємо клієнт трекера
 
-            LoadTestData();
+            // Генеруємо peer_id один раз при створенні ViewModel
+            _peerId = GeneratePeerId();
+
+            LoadTestData(); // Можна закоментувати, якщо вже додаємо реальні торенти
+        }
+        
+        private string GeneratePeerId()
+        {
+            // Простий варіант: "-TF0001-" + 12 випадкових символів
+            // TF - TorrentFlow, 0001 - версія
+            var random = new Random();
+            var randomChars = new char[12];
+            for (int i = 0; i < randomChars.Length; i++)
+            {
+                randomChars[i] = (char)random.Next(48, 122); // ASCII цифри та літери (не ідеально, але для початку)
+            }
+            return $"-TF0001-{new string(randomChars)}";
         }
 
         private void LoadTestData()
@@ -76,31 +99,69 @@ namespace TorrentFlow
                 var filePath = files[0].TryGetLocalPath();
                 if (!string.IsNullOrEmpty(filePath))
                 {
-                    StatusText = $"Файл вибрано: {filePath}";
+                    StatusText = $"Файл вибрано: {Path.GetFileName(filePath)}. Парсинг...";
                     try
                     {
-                        var torrentFileContent = await _torrentFileParser.ParseFileAsync(filePath);
-                        if (torrentFileContent != null)
+                        TorrentFileContent? torrentContent = await _torrentFileParser.ParseFileAsync(filePath);
+                        if (torrentContent != null && torrentContent.InfoHash != null)
                         {
-                            Torrents.Add(new TorrentInfo
+                            var newTorrentInfo = new TorrentInfo
                             {
-                                Name = torrentFileContent.Name ?? "Невідомий торент",
-                                Size = FormatSize(torrentFileContent.TotalSize), // Потрібен метод форматування розміру
-                                Status = "Додано",
-                                Progress = 0
-                                // Інші властивості...
-                            });
-                            StatusText = $"Торент '{torrentFileContent.Name}' успішно додано.";
+                                Name = torrentContent.Name ?? Path.GetFileNameWithoutExtension(filePath),
+                                Size = FormatSize(torrentContent.TotalSize),
+                                Status = "Додано, очікування трекера...",
+                                Progress = 0,
+                                // Зберігаємо повний контент для подальшого використання
+                                FullTorrentContent = torrentContent 
+                            };
+                            Torrents.Add(newTorrentInfo);
+                            StatusText = $"Торент '{newTorrentInfo.Name}' додано. Запит до трекера...";
+
+                            // Робимо запит до трекера
+                            TrackerResponse? trackerResponse = await _trackerClient.AnnounceAsync(
+                                torrentContent,
+                                _peerId,
+                                ListeningPort,
+                                0, // uploaded
+                                0, // downloaded
+                                "started" // event
+                            );
+
+                            if (trackerResponse != null)
+                            {
+                                if (trackerResponse.RequestFailed)
+                                {
+                                    newTorrentInfo.Status = $"Помилка трекера: {trackerResponse.FailureReason}";
+                                    StatusText = $"Помилка трекера для '{newTorrentInfo.Name}': {trackerResponse.FailureReason}";
+                                }
+                                else
+                                {
+                                    newTorrentInfo.Status = $"Пірів: {trackerResponse.Peers.Count}, S:{trackerResponse.Complete}/L:{trackerResponse.Incomplete}";
+                                    StatusText = $"Відповідь трекера для '{newTorrentInfo.Name}': {trackerResponse.Peers.Count} пірів.";
+                                    System.Diagnostics.Debug.WriteLine($"Отримані піри ({trackerResponse.Peers.Count}):");
+                                    foreach (var peer in trackerResponse.Peers)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"- {peer.EndPoint}");
+                                    }
+                                    // Тут можна зберегти trackerResponse.Peers для newTorrentInfo
+                                    // або передати в PeerManager
+                                }
+                            }
+                            else
+                            {
+                                newTorrentInfo.Status = "Помилка відповіді від трекера";
+                                StatusText = $"Помилка відповіді від трекера для '{newTorrentInfo.Name}'.";
+                            }
                         }
                         else
                         {
-                            StatusText = "Не вдалося розпарсити торент файл.";
+                            StatusText = "Не вдалося розпарсити торент файл або відсутній InfoHash.";
                         }
                     }
                     catch (System.Exception ex)
                     {
-                        StatusText = $"Помилка парсингу файлу: {ex.Message}";
-                         System.Diagnostics.Debug.WriteLine($"Помилка парсингу: {ex}");
+                        StatusText = $"Помилка обробки файлу: {ex.Message}";
+                        System.Diagnostics.Debug.WriteLine($"Помилка обробки: {ex}");
                     }
                 }
                 else
