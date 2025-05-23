@@ -1,0 +1,52 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:TorrentFlow"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="450"
+        x:Class="TorrentFlow.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Налаштування"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False" SizeToContent="WidthAndHeight">
+
+    <StackPanel Spacing="10" Margin="15">
+        <TextBlock Text="Налаштування Завантажень" FontWeight="Bold"/>
+        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
+            <Label Content="Шлях для завантажень:" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0"/>
+            <TextBox Text="{Binding DownloadPath}" IsReadOnly="True" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="5,0"/>
+            <Button Content="Обрати..." Command="{Binding BrowseDownloadPathCommand}" Grid.Row="0" Grid.Column="2"/>
+        </Grid>
+        
+        <Separator Margin="0,10"/>
+        <TextBlock Text="Загальні Налаштування" FontWeight="Bold"/>
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+            <Label Content="Порт прослуховування:" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0"/>
+            <NumericUpDown Value="{Binding ListeningPort}" Minimum="1024" Maximum="65535" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" Margin="5,0"/>
+
+            <Label Content="Макс. швидкість завантаження (KB/s):" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0"/>
+            <NumericUpDown Value="{Binding MaxDownloadSpeed, Converter={StaticResource BytesToKilobytesConverter}}" 
+                           Minimum="0" Increment="128" VerticalAlignment="Center" Grid.Row="1" Grid.Column="1" Margin="5,0"/>
+
+            <Label Content="Макс. швидкість віддачі (KB/s):" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0"/>
+            <NumericUpDown Value="{Binding MaxUploadSpeed, Converter={StaticResource BytesToKilobytesConverter}}" 
+                           Minimum="0" Increment="64" VerticalAlignment="Center" Grid.Row="2" Grid.Column="1" Margin="5,0"/>
+            
+            <Label Content="Макс. активних завантажень:" VerticalAlignment="Center" Grid.Row="3" Grid.Column="0"/>
+            <NumericUpDown Value="{Binding MaxActiveDownloads}" Minimum="1" Maximum="20" VerticalAlignment="Center" Grid.Row="3" Grid.Column="1" Margin="5,0"/>
+        </Grid>
+
+        <Separator Margin="0,10"/>
+        <TextBlock Text="Зовнішній вигляд" FontWeight="Bold"/>
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto">
+            <Label Content="Тема:" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0"/>
+            <ComboBox ItemsSource="{Binding AvailableThemes}" SelectedItem="{Binding SelectedTheme}"
+                      Grid.Row="0" Grid.Column="1" Margin="5,0"/>
+        </Grid>
+
+        <Separator Margin="0,15"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+            <Button Content="Зберегти" Command="{Binding SaveChangesCommand}" IsDefault="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

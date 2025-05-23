@@ -1,51 +1,52 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="using:TorrentFlow"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
-        x:Class="TorrentFlow.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Title="TorrentFlow Клієнт">
+        xmlns:vm="using:TorrentFlow" x:Class="TorrentFlow.MainWindow"
+        x:DataType="vm:MainWindowViewModel" Title="TorrentFlow">
 
-    <!-- <Window.DataContext> -->
-    <!--     <vm:MainWindowViewModel/> -->
-    <!-- </Window.DataContext> -->
-    <!-- -->
-    <!-- <DockPanel> -->
-    <!--     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="5"> -->
-    <!--         <Button Content="Додати торент" Name="AddTorrentButton" Command="{Binding AddTorrentCommand}"/> -->
-    <!--         <Button Content="Налаштування" Name="SettingsButton" Command="{Binding OpenSettingsCommand}"/> -->
-    <!--     </StackPanel> -->
-    <!-- -->
-    <!--     <Border DockPanel.Dock="Bottom" BorderBrush="Gray" BorderThickness="0,1,0,0"> -->
-    <!--         <TextBlock Text="{Binding StatusText}" Margin="5" Name="StatusTextBlock"/> -->
-    <!--     </Border> -->
-    <!-- -->
-    <!--     <Border BorderBrush="Gray" BorderThickness="0,1,0,0" Margin="5"> -->
-    <!--         <DataGrid Name="TorrentsDataGrid" -->
-    <!--                   ItemsSource="{Binding Torrents}" -->
-    <!--                   AutoGenerateColumns="False" -->
-    <!--                   IsReadOnly="True" -->
-    <!--                   GridLinesVisibility="All"> <DataGrid.Columns> -->
-    <!--                 <DataGridTextColumn Header="Ім'я" Binding="{Binding Name}" Width="*"/> -->
-    <!--                 <DataGridTextColumn Header="Розмір" Binding="{Binding Size}" Width="100"/> -->
-    <!--                  -->
-    <!--                 <DataGridTemplateColumn Header="Прогрес" Width="120"> -->
-    <!--                     <DataTemplate x:DataType="vm:TorrentInfo"> <ProgressBar Minimum="0"  -->
-    <!--                                      Maximum="100"  -->
-    <!--                                      Value="{Binding Progress}"  -->
-    <!--                                      Margin="4" -->
-    <!--                                      VerticalAlignment="Center"/> -->
-    <!--                     </DataTemplate> -->
-    <!--                 </DataGridTemplateColumn> -->
-    <!--                  -->
-    <!--                 <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="120"/> -->
-    <!--                 <DataGridTextColumn Header="Швидк. завант." Binding="{Binding DownloadSpeed}" Width="110"/> -->
-    <!--                 <DataGridTextColumn Header="Швидк. віддачі" Binding="{Binding UploadSpeed}" Width="110"/> -->
-    <!--                 <DataGridTextColumn Header="Піри" Binding="{Binding Peers}" Width="70"/> -->
-    <!--             </DataGrid.Columns> -->
-    <!--         </DataGrid> -->
-    <!--     </Border> -->
-    <!-- </DockPanel> -->
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5" Spacing="5">
+            <Button Content="Додати торент"
+                    Command="{Binding AddTorrentCommand}"/>
+        
+            <Button Content="Налаштування"
+                    Command="{Binding OpenSettingsCommand}"/>
+        </StackPanel>
+
+        <DataGrid ItemsSource="{Binding Torrents}" AutoGenerateColumns="False"
+                  Grid.Row="1" Margin="5">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Назва" Binding="{Binding TorrentName}" Width="*"/>
+                <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="200"/>
+
+                <DataGridTemplateColumn Header="Прогрес" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:TorrentTransferViewModel">
+                            <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="100"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Завантажено" Binding="{Binding DownloadedSize}" Width="100"/>
+                <DataGridTextColumn Header="Розмір" Binding="{Binding TotalSize}" Width="100"/>
+                <DataGridTextColumn Header="↓ Швидкість" Binding="{Binding DownloadSpeed}" Width="100"/>
+                <DataGridTextColumn Header="↑ Швидкість" Binding="{Binding UploadSpeed}" Width="100"/>
+                <DataGridTextColumn Header="Сіди" Binding="{Binding Seeders}" Width="150"/>
+                <DataGridTextColumn Header="Лічи" Binding="{Binding Leechers}" Width="150"/>
+
+                <DataGridTemplateColumn Header="Дії">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:TorrentTransferViewModel">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Стоп" Command="{Binding StopTorrentCommand}" Margin="2"/>
+                                </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
 </Window>

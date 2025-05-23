@@ -334,36 +334,39 @@ namespace TorrentFlow.TorrentClientLibrary
                 throw new ObjectDisposedException("TorrentClient");
             }
         }
-        private bool CreateFile(string filePath, long fileLength)
+        private void CreateFile(string filePath, long fileLength)
         {
             filePath.CannotBeNullOrEmpty();
             filePath.MustBeValidFilePath();
-            fileLength.MustBeGreaterThan(0);
+            // fileLength.MustBeGreaterThan(0); // Розгляньте, чи можуть бути файли нульової довжини в торенті.
+            // Якщо так, змініть на MustBeGreaterThanOrEqualTo(0)
+            // Або залиште MustBeGreaterThan(0), якщо це дійсно вимога.
+            // Поточна TorrentFileInfo вимагає length > 0.
 
             this.CheckIfObjectIsDisposed();
 
-            if (!Directory.Exists(Path.GetDirectoryName(filePath)))
+            string directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
-                Debug.WriteLine($"creating directory {Path.GetDirectoryName(filePath)}");
-
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                Debug.WriteLine($"creating directory {directory}");
+                Directory.CreateDirectory(directory);
             }
 
-            if (!File.Exists(filePath))
+            using (FileStream stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                Debug.WriteLine($"creating file {filePath}");
-
-                using (FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                if (stream.Length != fileLength)
                 {
-                    stream.SetLength(fileLength);
-                    stream.Close();
+                    Debug.WriteLine($"Setting length of file {filePath} to {fileLength}. Previous length: {stream.Length}");
+                    try
+                    {
+                        stream.SetLength(fileLength);
+                    }
+                    catch (IOException ex)
+                    {
+                        Debug.WriteLine($"Error setting file length for {filePath}: {ex.Message}");
+                        throw new TorrentPersistanceException($"Error setting file length for {filePath}: {ex.Message}", ex);
+                    }
                 }
-
-                return true;
-            }
-            else
-            {
-                return false;
             }
         }
         private PieceStatus GetStatus(bool ignore, bool download, string pieceHash, string calculatedPieceHash)

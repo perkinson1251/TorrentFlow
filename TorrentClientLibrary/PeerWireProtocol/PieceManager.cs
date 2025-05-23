@@ -184,7 +184,11 @@ namespace TorrentFlow.TorrentClientLibrary.PeerWireProtocol
         }
         public void Dispose()
         {
-            this.CheckIfObjectIsDisposed();
+            if (this.IsDisposed)
+            {
+                return;
+            }
+            this.IsDisposed = true;
 
             if (this.timer != null)
             {
@@ -307,6 +311,7 @@ namespace TorrentFlow.TorrentClientLibrary.PeerWireProtocol
         {
             lock (this.locker)
             {
+                if (this.IsDisposed) return;
                 // only pieces not yet downloaded can be checked in
                 if (this.BitField[e.PieceIndex] == PieceStatus.Missing ||
                     this.BitField[e.PieceIndex] == PieceStatus.CheckedOut)

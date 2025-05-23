@@ -5,6 +5,7 @@
       <map>
         <entry key="App.axaml" value="TorrentFlow.csproj" />
         <entry key="MainWindow.axaml" value="TorrentFlow.csproj" />
+        <entry key="SettingsWindow.axaml" value="TorrentFlow.csproj" />
       </map>
     </option>
   </component>

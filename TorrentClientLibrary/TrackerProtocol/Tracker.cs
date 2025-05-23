@@ -155,7 +155,7 @@ namespace TorrentFlow.TorrentClientLibrary.TrackerProtocol
                 throw new ObjectDisposedException(this.GetType().Name);
             }
         }
-        private void OnTrackingFailed(object sender, TrackingFailedEventArgs e)
+        public void OnTrackingFailed(object sender, TrackingFailedEventArgs e)
         {
             sender.CannotBeNull();
             e.CannotBeNull();
