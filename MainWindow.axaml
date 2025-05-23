@@ -8,44 +8,44 @@
         x:DataType="vm:MainWindowViewModel"
         Title="TorrentFlow Клієнт">
 
-    <Window.DataContext>
-        <vm:MainWindowViewModel/>
-    </Window.DataContext>
-
-    <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="5">
-            <Button Content="Додати торент" Name="AddTorrentButton" Command="{Binding AddTorrentCommand}"/>
-            <Button Content="Налаштування" Name="SettingsButton" Command="{Binding OpenSettingsCommand}"/>
-        </StackPanel>
-
-        <Border DockPanel.Dock="Bottom" BorderBrush="Gray" BorderThickness="0,1,0,0">
-            <TextBlock Text="{Binding StatusText}" Margin="5" Name="StatusTextBlock"/>
-        </Border>
-
-        <Border BorderBrush="Gray" BorderThickness="0,1,0,0" Margin="5">
-            <DataGrid Name="TorrentsDataGrid"
-                      ItemsSource="{Binding Torrents}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      GridLinesVisibility="All"> <DataGrid.Columns>
-                    <DataGridTextColumn Header="Ім'я" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Розмір" Binding="{Binding Size}" Width="100"/>
-                    
-                    <DataGridTemplateColumn Header="Прогрес" Width="120">
-                        <DataTemplate x:DataType="vm:TorrentInfo"> <ProgressBar Minimum="0" 
-                                         Maximum="100" 
-                                         Value="{Binding Progress}" 
-                                         Margin="4"
-                                         VerticalAlignment="Center"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn>
-                    
-                    <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="120"/>
-                    <DataGridTextColumn Header="Швидк. завант." Binding="{Binding DownloadSpeed}" Width="110"/>
-                    <DataGridTextColumn Header="Швидк. віддачі" Binding="{Binding UploadSpeed}" Width="110"/>
-                    <DataGridTextColumn Header="Піри" Binding="{Binding Peers}" Width="70"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
-    </DockPanel>
+    <!-- <Window.DataContext> -->
+    <!--     <vm:MainWindowViewModel/> -->
+    <!-- </Window.DataContext> -->
+    <!-- -->
+    <!-- <DockPanel> -->
+    <!--     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="5"> -->
+    <!--         <Button Content="Додати торент" Name="AddTorrentButton" Command="{Binding AddTorrentCommand}"/> -->
+    <!--         <Button Content="Налаштування" Name="SettingsButton" Command="{Binding OpenSettingsCommand}"/> -->
+    <!--     </StackPanel> -->
+    <!-- -->
+    <!--     <Border DockPanel.Dock="Bottom" BorderBrush="Gray" BorderThickness="0,1,0,0"> -->
+    <!--         <TextBlock Text="{Binding StatusText}" Margin="5" Name="StatusTextBlock"/> -->
+    <!--     </Border> -->
+    <!-- -->
+    <!--     <Border BorderBrush="Gray" BorderThickness="0,1,0,0" Margin="5"> -->
+    <!--         <DataGrid Name="TorrentsDataGrid" -->
+    <!--                   ItemsSource="{Binding Torrents}" -->
+    <!--                   AutoGenerateColumns="False" -->
+    <!--                   IsReadOnly="True" -->
+    <!--                   GridLinesVisibility="All"> <DataGrid.Columns> -->
+    <!--                 <DataGridTextColumn Header="Ім'я" Binding="{Binding Name}" Width="*"/> -->
+    <!--                 <DataGridTextColumn Header="Розмір" Binding="{Binding Size}" Width="100"/> -->
+    <!--                  -->
+    <!--                 <DataGridTemplateColumn Header="Прогрес" Width="120"> -->
+    <!--                     <DataTemplate x:DataType="vm:TorrentInfo"> <ProgressBar Minimum="0"  -->
+    <!--                                      Maximum="100"  -->
+    <!--                                      Value="{Binding Progress}"  -->
+    <!--                                      Margin="4" -->
+    <!--                                      VerticalAlignment="Center"/> -->
+    <!--                     </DataTemplate> -->
+    <!--                 </DataGridTemplateColumn> -->
+    <!--                  -->
+    <!--                 <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="120"/> -->
+    <!--                 <DataGridTextColumn Header="Швидк. завант." Binding="{Binding DownloadSpeed}" Width="110"/> -->
+    <!--                 <DataGridTextColumn Header="Швидк. віддачі" Binding="{Binding UploadSpeed}" Width="110"/> -->
+    <!--                 <DataGridTextColumn Header="Піри" Binding="{Binding Peers}" Width="70"/> -->
+    <!--             </DataGrid.Columns> -->
+    <!--         </DataGrid> -->
+    <!--     </Border> -->
+    <!-- </DockPanel> -->
 </Window>
