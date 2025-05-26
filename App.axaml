@@ -3,17 +3,152 @@
              x:Class="TorrentFlow.App"
              xmlns:local="clr-namespace:TorrentFlow"
              RequestedThemeVariant="Default">
+
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+        <Style>
+            <Style Selector="Button">
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="ProgressBar">
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <DoubleTransition Property="Value" Duration="0:0:0.3" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="TextBox">
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <ThicknessTransition Property="BorderThickness" Duration="0:0:0.2" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="TextBox:focus">
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            </Style>
+
+            <Style Selector="ComboBox">
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <ThicknessTransition Property="BorderThickness" Duration="0:0:0.2" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="ComboBox:focus">
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+            </Style>
+
+            <Style Selector="Border">
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.3" />
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" />
+                    </Transitions>
+                </Setter>
+            </Style>
+
+            <Style Selector="ScrollViewer">
+                <Setter Property="AllowAutoHide" Value="True" />
+            </Style>
+
+            <Style Selector="ToolTip">
+                <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="FontSize" Value="12" />
+            </Style>
+
+            <Style Selector="Window">
+                <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumBrush}" />
+            </Style>
+
+            <Style Selector="ScrollBar">
+                <Setter Property="AllowAutoHide" Value="True" />
+            </Style>
+
+            <Style Selector="ScrollBar:vertical">
+                <Setter Property="Width" Value="12" />
+            </Style>
+
+            <Style Selector="ScrollBar:horizontal">
+                <Setter Property="Height" Value="12" />
+            </Style>
+        </Style>
+
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="Button.accent:pressed">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColorDark1}" />
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltMediumBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BoxShadow" Value="0 2 8 #1A000000" />
+        </Style>
+
+        <Style Selector="Border.card:pointerover">
+            <Setter Property="BoxShadow" Value="0 4 16 #1A000000" />
+        </Style>
+
+        <Style Selector="TextBlock.h1">
+            <Setter Property="FontSize" Value="32" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+
+        <Style Selector="TextBlock.h2">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.h3">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.subtitle">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
+
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+        </Style>
     </Application.Styles>
+
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="/Assets/icon.ico" ToolTipText="TorrentFlow">
+            <TrayIcon Icon="/Assets/icon.ico" ToolTipText="TorrentFlow - Modern Torrent Client">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Show" Command="{Binding ShowCommand, Source={x:Static local:App.Current}}" />
-                        <NativeMenuItem Header="Exit" Command="{Binding ExitCommand, Source={x:Static local:App.Current}}" />
+                        <NativeMenuItem Header="Show TorrentFlow"
+                                        Command="{Binding ShowCommand, Source={x:Static local:App.Current}}" />
+                        <NativeMenuItemSeparator />
+                        <NativeMenuItem Header="Exit"
+                                        Command="{Binding ExitCommand, Source={x:Static local:App.Current}}" />
                     </NativeMenu>
                 </TrayIcon.Menu>
             </TrayIcon>

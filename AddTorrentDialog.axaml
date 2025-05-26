@@ -1,18 +1,157 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="TorrentFlow.AddTorrentDialog"
-        Title="Add Torrent"
-        Width="400" Height="200">
-    
-    <StackPanel Margin="10">
-        <TextBlock Text="Select Directory to Save Torrent:" Margin="5"/>
-        <TextBlock x:Name="TorrentNameTextBox" Text="{Binding TorrentName}" Margin="5"/>
-        <TextBox x:Name="DirectoryTextBox" Text="{Binding SelectedDirectory, Mode=TwoWay}" AcceptsReturn="False" TextWrapping="NoWrap" Margin="5" HorizontalAlignment="Stretch"/>
-        <Button Content="Browse" Click="BrowseButton_Click" Margin="5"/>
-        
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-            <Button Content="OK" Click="OkButton_Click" Margin="5"/>
-            <Button Content="Cancel" Click="CancelButton_Click" Margin="5"/>
-        </StackPanel>
-    </StackPanel>
+        Title="Add Torrent - TorrentFlow"
+        Width="500"
+        SizeToContent="Height" CanResize="False"
+        Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+        Icon="/Assets/icon.ico">
+
+    <Window.Styles>
+        <Style Selector="Border.content-section">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltMediumBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style Selector="TextBlock.field-label">
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <Style Selector="TextBlock.field-description">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <Style Selector="TextBlock.torrent-name">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <Style Selector="TextBox.dialog-textbox">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <Style Selector="Button.dialog-button">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="16,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="MinWidth" Value="100" />
+        </Style>
+
+        <Style Selector="Button.primary-button">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="Button.primary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+        </Style>
+
+        <Style Selector="Button.secondary-button">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <Style Selector="Button.secondary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumLowBrush}" />
+        </Style>
+
+        <Style Selector="Button.browse-button">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="MinWidth" Value="80" />
+        </Style>
+
+        <Style Selector="Button.browse-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumHighBrush}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="24,20" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="➕ Add Torrent" FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <TextBlock Text="Configure download location for your torrent" FontSize="14"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Padding="24">
+            <StackPanel>
+                <TextBlock Text="📁 Torrent Information" Classes="section-title" />
+
+                <TextBlock Text="Torrent Name" Classes="field-label" />
+                <Border CornerRadius="6" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                        BorderThickness="1" Margin="0,0,0,8">
+                    <TextBlock x:Name="TorrentNameTextBox" Text="{Binding TorrentName}"
+                               Classes="torrent-name" />
+                </Border>
+                <TextBlock Text="The name of the torrent file you're adding"
+                           Classes="field-description" Margin="0,0,0,16" />
+
+                <TextBlock Text="Save Location" Classes="field-label" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="DirectoryTextBox" Grid.Column="0"
+                             Text="{Binding SelectedDirectory, Mode=TwoWay}"
+                             Classes="dialog-textbox"
+                             Watermark="Select folder to save downloaded files" />
+                    <Button Grid.Column="1" Content="📂 Browse" Click="BrowseButton_Click"
+                            Classes="dialog-button browse-button" Margin="8,0,0,0" />
+                </Grid>
+                <TextBlock Text="Choose where the torrent files will be downloaded"
+                           Classes="field-description" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Margin="0 24 0 0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="24,16" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                <Button Content="Cancel" Click="CancelButton_Click"
+                        Classes="dialog-button secondary-button" />
+                <Button Content="🚀 Add Torrent" Click="OkButton_Click"
+                        Classes="dialog-button primary-button" MinWidth="120" />
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

@@ -19,324 +19,300 @@ using MsBox.Avalonia;
 using MsBox.Avalonia.Dto;
 using MsBox.Avalonia.Models;
 
-namespace TorrentFlow
+namespace TorrentFlow;
+
+public partial class MainWindow : Window
 {
-    public partial class MainWindow : Window
+    private readonly TorrentManagerService _torrentManager;
+    private string _sessionDirectory = AppDomain.CurrentDomain.BaseDirectory + "session.json";
+
+    private DispatcherTimer _updateTimer;
+
+    public ObservableCollection<TorrentView> Torrents { get; } = new();
+
+    public MainWindow(TorrentManagerService torrentManagerService)
     {
-        private readonly TorrentManagerService _torrentManager;
-        private string _sessionDirectory = AppDomain.CurrentDomain.BaseDirectory + "session.json";
-        
-        private DispatcherTimer _updateTimer;
-        
-        public ObservableCollection<TorrentView> Torrents { get; } = new();
+        InitializeComponent();
+        _torrentManager = torrentManagerService;
+        DataContext = this;
 
-        public MainWindow(TorrentManagerService torrentManagerService)
+        _updateTimer = new DispatcherTimer
         {
-            InitializeComponent();
-            _torrentManager = torrentManagerService;
-            DataContext = this; 
-            
-            _updateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            _updateTimer.Tick += (sender, args) => UpdateTorrentProgress();
-            _updateTimer.Start();
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _updateTimer.Tick += (sender, args) => UpdateTorrentProgress();
+        _updateTimer.Start();
 
-            LoadSessionAsync();
+        LoadSessionAsync();
 
-            this.Closing += MainWindow_Closing;
-            this.Opened += MainWindow_Opened;
-        }
+        Closing += MainWindow_Closing;
+        Opened += MainWindow_Opened;
+    }
 
-        private async void MainWindow_Opened(object sender, EventArgs e)
+    private async void MainWindow_Opened(object sender, EventArgs e)
+    {
+        await Task.Delay(250);
+
+        foreach (var arg in App.StartupArgs)
         {
-            await Task.Delay(250);
-
-            foreach (var arg in App.StartupArgs)
+            if (arg.StartsWith("magnetic", StringComparison.OrdinalIgnoreCase))
             {
-                if (arg.StartsWith("magnetic", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Loading magnetic link: " + arg);
-                    await LoadFile(arg, "", true);
-                }
-                if (arg.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine("Loading torrent: " + arg);
-                    await LoadFile(arg, "", true);
-                }
+                Console.WriteLine("Loading magnetic link: " + arg);
+                await LoadFile(arg, "", true);
+            }
+
+            if (arg.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Loading torrent: " + arg);
+                await LoadFile(arg, "", true);
             }
         }
+    }
 
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                e.Cancel = true;
-                this.Hide();
-            }
-            else
-            {
-                if(Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
-                {
-                    desktopLifetime.Shutdown();
-                }
-            }
+            e.Cancel = true;
+            Hide();
         }
-
-        public async Task LoadFile(string filePath, string savePath, bool startOnAdd)
+        else
         {
-            Torrent torrent = null;
-            string tempFilePath = "";
+            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
+                desktopLifetime.Shutdown();
+        }
+    }
 
-            if (filePath.StartsWith("magnet"))
-            {
-                var loadingDialog = new LoadingDialog(this);
-                loadingDialog.Show();
+    public async Task LoadFile(string filePath, string savePath, bool startOnAdd)
+    {
+        Torrent torrent = null;
+        var tempFilePath = "";
 
-                tempFilePath = filePath.Replace("%", "");
-                var data = await _torrentManager.LoadMagneticLinkMetadata(tempFilePath); 
-                torrent = Torrent.Load(data);
-                
-                loadingDialog.Close();
-            }
-            else if(filePath.EndsWith(".torrent"))
-            {
-                if (!File.Exists(filePath))
-                    return;
+        if (filePath.StartsWith("magnet"))
+        {
+            var loadingDialog = new LoadingDialog(this);
+            loadingDialog.Show();
 
-                string tempDirectory = AppDomain.CurrentDomain.BaseDirectory + "tmp";
-                if (!Directory.Exists(tempDirectory))
-                {
-                    Directory.CreateDirectory(tempDirectory);
-                }
-                string fileName = Path.GetFileName(filePath);
-                tempFilePath = Path.Combine(tempDirectory, fileName);
+            tempFilePath = filePath.Replace("%", "");
+            var data = await _torrentManager.LoadMagneticLinkMetadata(tempFilePath);
+            torrent = Torrent.Load(data);
 
-                if(!File.Exists(tempFilePath))
-                {
-                    try
-                    {
-                        File.Copy(filePath, tempFilePath, overwrite: true);
-                        Console.WriteLine($"File copied to {tempFilePath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error copying file: {ex.Message}");
-                        return;
-                    }
-                }
+            loadingDialog.Close();
+        }
+        else if (filePath.EndsWith(".torrent"))
+        {
+            if (!File.Exists(filePath))
+                return;
 
-                torrent = Torrent.Load(tempFilePath);
+            var tempDirectory = AppDomain.CurrentDomain.BaseDirectory + "tmp";
+            if (!Directory.Exists(tempDirectory)) Directory.CreateDirectory(tempDirectory);
+            var fileName = Path.GetFileName(filePath);
+            tempFilePath = Path.Combine(tempDirectory, fileName);
 
-                // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI
-                if (Torrents.Any(t => t.Name == torrent.Name))
-                {
-                    ShowWarning($"The torrent \"{torrent.Name}\" is already downloading.");
-                    return;
-                }
-            }
-            
-            if(string.IsNullOrEmpty(savePath))
-            {
-                var addTorrentDialog = new AddTorrentDialog(torrent.Name);
-                savePath = await addTorrentDialog.ShowDialog<string>(this);
-            }
-
-            if (!string.IsNullOrWhiteSpace(savePath))
-            {
+            if (!File.Exists(tempFilePath))
                 try
                 {
-                    var torrentManager = await _torrentManager.StartTorrentAsync(torrent, savePath, startOnAdd);
-                    
-                    // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI перед додаванням
-                    if (!Torrents.Any(t => t.Name == torrent.Name))
-                    {
-                        var torrentView = new TorrentView(torrentManager);
-                        torrentView.FileName = tempFilePath;
-                        Torrents.Add(torrentView);
-                        Console.WriteLine($"Added torrent to UI: {torrent.Name}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Torrent already exists in UI: {torrent.Name}");
-                    }
+                    File.Copy(filePath, tempFilePath, true);
+                    Console.WriteLine($"File copied to {tempFilePath}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error loading torrent {torrent?.Name}: {ex.Message}");
-                    ShowWarning($"Error loading torrent: {ex.Message}");
+                    Console.WriteLine($"Error copying file: {ex.Message}");
+                    return;
                 }
+
+            torrent = Torrent.Load(tempFilePath);
+
+            // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI
+            if (Torrents.Any(t => t.Name == torrent.Name))
+            {
+                ShowWarning($"The torrent \"{torrent.Name}\" is already downloading.");
+                return;
             }
         }
 
-        public async void ShowWarning(string message)
+        if (string.IsNullOrEmpty(savePath))
         {
-            var messageBox = MessageBoxManager
-                .GetMessageBoxCustom(new MessageBoxCustomParams
+            var addTorrentDialog = new AddTorrentDialog(torrent.Name);
+            savePath = await addTorrentDialog.ShowDialog<string>(this);
+        }
+
+        if (!string.IsNullOrWhiteSpace(savePath))
+            try
+            {
+                var torrentManager = await _torrentManager.StartTorrentAsync(torrent, savePath, startOnAdd);
+
+                // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI перед додаванням
+                if (!Torrents.Any(t => t.Name == torrent.Name))
                 {
-                    ContentTitle = "Warning",
-                    ContentMessage = message,
-                    ButtonDefinitions = new[]
-                    {
-                        new ButtonDefinition { Name = "OK" }
-                    }
-                });
-
-            await messageBox.ShowWindowDialogAsync(this);
-        }
-
-
-        private async void AddTorrentButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new OpenFileDialog
-            {
-                Title = "Select a Torrent File",
-                Filters = new List<FileDialogFilter>
-                { 
-                    new FileDialogFilter { Name = "Torrent Files", Extensions = new List<string> { "torrent" } }
+                    var torrentView = new TorrentView(torrentManager);
+                    torrentView.FileName = tempFilePath;
+                    Torrents.Add(torrentView);
+                    Console.WriteLine($"Added torrent to UI: {torrent.Name}");
                 }
-            };
-
-            var result = await dialog.ShowAsync(this);
-            if (result != null && result.Length > 0)
-            {
-                string torrentFilePath = result[0];
-                await LoadFile(torrentFilePath, "", true);
-            }
-        }
-
-        private async void ResumeButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is TorrentView torrent)
-            {
-                await _torrentManager.ResumeTorrentAsync(torrent.Name);
-            }
-        }
-
-        private async void PauseButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is TorrentView torrent)
-            {
-                await _torrentManager.PauseTorrentAsync(torrent.Name);
-            }
-        }
-
-        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is TorrentView torrent)
-            {
-                if (Torrents.Contains(torrent))
-                    Torrents.Remove(torrent);
-
-                if(torrent.FileName.EndsWith(".torrent"))
+                else
                 {
-                    try
-                    {
-                        File.Delete(Path.Combine(torrent.FileName));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Could not delete torrent file {torrent.FileName}: {ex.Message}");
-                    }
+                    Console.WriteLine($"Torrent already exists in UI: {torrent.Name}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading torrent {torrent?.Name}: {ex.Message}");
+                ShowWarning($"Error loading torrent: {ex.Message}");
+            }
+    }
+
+    public async void ShowWarning(string message)
+    {
+        var messageBox = MessageBoxManager
+            .GetMessageBoxCustom(new MessageBoxCustomParams
+            {
+                ContentTitle = "Warning",
+                ContentMessage = message,
+                ButtonDefinitions = new[]
+                {
+                    new ButtonDefinition { Name = "OK" }
+                }
+            });
+
+        await messageBox.ShowWindowDialogAsync(this);
+    }
+
+
+    private async void AddTorrentButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select a Torrent File",
+            Filters = new List<FileDialogFilter>
+            {
+                new() { Name = "Torrent Files", Extensions = new List<string> { "torrent" } }
+            }
+        };
+
+        var result = await dialog.ShowAsync(this);
+        if (result != null && result.Length > 0)
+        {
+            var torrentFilePath = result[0];
+            await LoadFile(torrentFilePath, "", true);
+        }
+    }
+
+    private async void ResumeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is TorrentView torrent)
+            await _torrentManager.ResumeTorrentAsync(torrent.Name);
+    }
+
+    private async void PauseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is TorrentView torrent)
+            await _torrentManager.PauseTorrentAsync(torrent.Name);
+    }
+
+    private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is TorrentView torrent)
+        {
+            if (Torrents.Contains(torrent))
+                Torrents.Remove(torrent);
+
+            if (torrent.FileName.EndsWith(".torrent"))
+                try
+                {
+                    File.Delete(Path.Combine(torrent.FileName));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Could not delete torrent file {torrent.FileName}: {ex.Message}");
                 }
 
-                await SaveSessionAsync();
-                await _torrentManager.DeleteTorrentAsync(torrent.Name, true);
-            }
-        }
-
-        private async Task UpdateTorrentProgress()
-        {
-            foreach (var torrent in Torrents)
-            {
-                torrent.UpdateProgress();
-                torrent.UpdateSpeeds();
-            }
-            
-            // ВИПРАВЛЕННЯ: Зберігаємо fast resume рідше і тільки для активних торентів
-            await _torrentManager.SaveAllTorrentsStateAsync();
             await SaveSessionAsync();
+            await _torrentManager.DeleteTorrentAsync(torrent.Name, true);
+        }
+    }
+
+    private async Task UpdateTorrentProgress()
+    {
+        foreach (var torrent in Torrents)
+        {
+            torrent.UpdateProgress();
+            torrent.UpdateSpeeds();
         }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
-        {
-            var settingsWindow = App.GetService<SettingsWindow>();
-            settingsWindow.ShowDialog(this);
-        }
+        // ВИПРАВЛЕННЯ: Зберігаємо fast resume рідше і тільки для активних торентів
+        await _torrentManager.SaveAllTorrentsStateAsync();
+        await SaveSessionAsync();
+    }
 
-        private void OpenDirectoryButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is TorrentView torrent)
-            {
-                var path = torrent.SavePath;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    Process.Start("explorer.exe", path);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    Process.Start("xdg-open", path);
-                }
-            }
-        }
-        
-        public async Task SaveSessionAsync()
-        {
-            try
-            {
-                var session = new SessionData();
-                foreach (var kvp in Torrents)
-                {
-                    session.Torrents.Add(new TorrentSessionItem 
-                    { 
-                        TorrentFile = kvp.FileName, 
-                        SavePath = kvp.SavePath,
-                        State = kvp.Status
-                    });
-                }
-                string json = System.Text.Json.JsonSerializer.Serialize(session);
-                await File.WriteAllTextAsync(_sessionDirectory, json);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving session: {ex.Message}");
-            }
-        }
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settingsWindow = App.GetService<SettingsWindow>();
+        settingsWindow.ShowDialog(this);
+    }
 
-        private async Task LoadSessionAsync()
+    private void OpenDirectoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is TorrentView torrent)
         {
-            try
-            {
-                if (File.Exists(_sessionDirectory))
+            var path = torrent.SavePath;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                Process.Start("explorer.exe", path);
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) Process.Start("xdg-open", path);
+        }
+    }
+
+    public async Task SaveSessionAsync()
+    {
+        try
+        {
+            var session = new SessionData();
+            foreach (var kvp in Torrents)
+                session.Torrents.Add(new TorrentSessionItem
                 {
-                    string json = await File.ReadAllTextAsync(_sessionDirectory);
-                    var session = System.Text.Json.JsonSerializer.Deserialize<SessionData>(json);
-                    
-                    if (session?.Torrents != null)
-                    {
-                        Console.WriteLine($"Loading {session.Torrents.Count} torrents from session");
-                        
-                        foreach (var item in session.Torrents)
+                    TorrentFile = kvp.FileName,
+                    SavePath = kvp.SavePath,
+                    State = kvp.Status
+                });
+            var json = System.Text.Json.JsonSerializer.Serialize(session);
+            await File.WriteAllTextAsync(_sessionDirectory, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving session: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSessionAsync()
+    {
+        try
+        {
+            if (File.Exists(_sessionDirectory))
+            {
+                var json = await File.ReadAllTextAsync(_sessionDirectory);
+                var session = System.Text.Json.JsonSerializer.Deserialize<SessionData>(json);
+
+                if (session?.Torrents != null)
+                {
+                    Console.WriteLine($"Loading {session.Torrents.Count} torrents from session");
+
+                    foreach (var item in session.Torrents)
+                        try
                         {
-                            try
-                            {
-                                await LoadFile(item.TorrentFile,
-                                              item.SavePath,
-                                              startOnAdd: item.State == TorrentState.Downloading);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Error loading torrent from session {item.TorrentFile}: {ex.Message}");
-                            }
+                            await LoadFile(item.TorrentFile,
+                                item.SavePath,
+                                item.State == TorrentState.Downloading);
                         }
-                    }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error loading torrent from session {item.TorrentFile}: {ex.Message}");
+                        }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading session: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading session: {ex.Message}");
         }
     }
 }

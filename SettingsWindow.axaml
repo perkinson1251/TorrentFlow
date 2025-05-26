@@ -3,50 +3,231 @@
         xmlns:local="using:TorrentFlow"
         xmlns:enums="using:TorrentFlow.Enums"
         x:Class="TorrentFlow.SettingsWindow"
-        Title="Settings"
-        Width="500" CanResize="False"
-        SizeToContent="Height">
+        Title="Settings - TorrentFlow"
+        Width="600" Height="500"
+        CanResize="False"
+        Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+        Icon="/Assets/settings_icon.ico">
 
-  <Window.Resources>
-    <local:EnumDescriptionConverter x:Key="EnumToDescriptionConverter"/>
-  </Window.Resources>
+    <Window.Resources>
+        <local:EnumDescriptionConverter x:Key="EnumToDescriptionConverter" />
+    </Window.Resources>
 
-  <Grid Margin="15">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/> <RowDefinition Height="*"/>
-      <RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
-    
-    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
-      <TextBlock Text="Default Save Location:" VerticalAlignment="Center"/>
-      <TextBox Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}" Width="250" Watermark="e.g., D:\Torrents"/>
-      <Button Content="Browse" Click="BrowseButton_Click"/>
-    </StackPanel>
-    
-    <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5" Margin="0,0,0,15">
-        <TextBlock Text="Max Download Speed (KB/s):" VerticalAlignment="Center"/>
-        <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}" Width="150" Watermark="0 for unlimited"/>
-        <TextBlock Text="Enter 0 for unlimited speed." FontSize="10" Foreground="Gray"/>
-    </StackPanel>
+    <Window.Styles>
+        <!-- Стиль для секций настроек -->
+        <Style Selector="Border.settings-section">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltMediumBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
-        <TextBlock Text="Application Theme:" VerticalAlignment="Center"/>
-        <ComboBox ItemsSource="{Binding ThemeTypes}"
-                  SelectedItem="{Binding TempSelectedTheme, Mode=TwoWay}"
-                  Width="200">
-            <ComboBox.ItemTemplate>
-                <DataTemplate DataType="{x:Type enums:ThemeType}">
-                    <TextBlock Text="{Binding Converter={StaticResource EnumToDescriptionConverter}}"/>
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
-    </StackPanel>
-    
-    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,15,0,0">
-      <Button Content="Save" Click="SaveButton_Click" Width="80"/>
-      <Button Content="Cancel" Click="CancelButton_Click" Width="80"/>
-    </StackPanel>
-  </Grid>
+        <!-- Заголовки секций -->
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <!-- Подписи полей -->
+        <Style Selector="TextBlock.field-label">
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <!-- Описания полей -->
+        <Style Selector="TextBlock.field-description">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <!-- Стиль для текстовых полей -->
+        <Style Selector="TextBox.settings-textbox">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <!-- Стиль для комбобоксов -->
+        <Style Selector="ComboBox.settings-combobox">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <!-- Стиль для кнопок -->
+        <Style Selector="Button.settings-button">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="16,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style Selector="Button.primary-button">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColor}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="Button.primary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemAccentColorLight1}" />
+        </Style>
+
+        <Style Selector="Button.secondary-button">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+        </Style>
+
+        <Style Selector="Button.secondary-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumLowBrush}" />
+        </Style>
+
+        <Style Selector="Button.browse-button">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            <Setter Property="MinWidth" Value="80" />
+        </Style>
+
+        <Style Selector="Button.browse-button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseMediumHighBrush}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="24,20" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="⚙️ Settings" FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <TextBlock Text="Configure your TorrentFlow preferences" FontSize="14"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Основной контент -->
+        <ScrollViewer Grid.Row="1" Padding="24">
+            <StackPanel Spacing="0">
+
+                <!-- Секция загрузок -->
+                <Border Classes="settings-section">
+                    <StackPanel>
+                        <TextBlock Text="📁 Download Settings" Classes="section-title" />
+
+                        <TextBlock Text="Default Save Location" Classes="field-label" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0" Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}"
+                                     Classes="settings-textbox"
+                                     Watermark="Select folder for downloaded files" />
+                            <Button Grid.Column="1" Content="📂 Browse" Click="BrowseButton_Click"
+                                    Classes="settings-button browse-button" Margin="8,0,0,0" />
+                        </Grid>
+                        <TextBlock Text="Choose where your torrent files will be saved by default"
+                                   Classes="field-description" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Секция скорости -->
+                <Border Classes="settings-section">
+                    <StackPanel>
+                        <TextBlock Text="🚀 Speed Settings" Classes="section-title" />
+
+                        <TextBlock Text="Maximum Download Speed (KB/s)" Classes="field-label" />
+                        <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}"
+                                 Classes="settings-textbox"
+                                 Watermark="0 for unlimited" />
+                        <TextBlock Text="Set to 0 for unlimited download speed. Higher values limit bandwidth usage."
+                                   Classes="field-description" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Секция внешнего вида -->
+                <Border Classes="settings-section">
+                    <StackPanel>
+                        <TextBlock Text="🎨 Appearance" Classes="section-title" />
+
+                        <TextBlock Text="Application Theme" Classes="field-label" />
+                        <ComboBox ItemsSource="{Binding ThemeTypes}"
+                                  SelectedItem="{Binding TempSelectedTheme, Mode=TwoWay}"
+                                  Classes="settings-combobox">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type enums:ThemeType}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock
+                                            Text="{Binding Converter={StaticResource EnumToDescriptionConverter}}"
+                                            VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBlock Text="Choose between light, dark, or system default theme"
+                                   Classes="field-description" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="settings-section" Margin="0 0 0 80">
+                    <StackPanel>
+                        <TextBlock Text="ℹ️ About" Classes="section-title" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Version:"
+                                       FontWeight="Medium" Margin="0,0,16,8" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="1.0.0" Margin="0,0,0,8" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Engine:"
+                                       FontWeight="Medium" Margin="0,0,16,8" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="MonoTorrent" Margin="0,0,0,8" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Author:"
+                                       FontWeight="Medium" Margin="0,0,16,0" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Roman Trashutin (roman.trashutin@nure.ua)" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="24,16" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                <Button Content="Cancel" Click="CancelButton_Click"
+                        Classes="settings-button secondary-button" MinWidth="100" />
+                <Button Content="💾 Save Settings" Click="SaveButton_Click"
+                        Classes="settings-button primary-button" MinWidth="120" />
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

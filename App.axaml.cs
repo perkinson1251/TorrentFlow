@@ -14,149 +14,132 @@ using TorrentFlow.Enums;
 using TorrentFlow.Services;
 using TorrentFlow.Data;
 
-namespace TorrentFlow
+namespace TorrentFlow;
+
+public partial class App : Application
 {
-    public partial class App : Application
-    {        
-        private IServiceProvider _serviceProvider;
-        private Window _mainWindow;
-        public ICommand ExitCommand { get; }
-        public ICommand ShowCommand { get; }
-        public static List<string> StartupArgs { get; private set; }
+    private IServiceProvider _serviceProvider;
+    private Window _mainWindow;
+    public ICommand ExitCommand { get; }
+    public ICommand ShowCommand { get; }
+    public static List<string> StartupArgs { get; private set; }
 
-        public App()
-        {
-            ExitCommand = new RelayCommand(TrayExit);
-            ShowCommand = new RelayCommand(TrayShow);
-        }
+    public App()
+    {
+        ExitCommand = new RelayCommand(TrayExit);
+        ShowCommand = new RelayCommand(TrayShow);
+    }
 
-        public override void Initialize()
-        {
-            AvaloniaXamlLoader.Load(this);
-        }
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
 
-        public override async void OnFrameworkInitializationCompleted()
+    public override async void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            _serviceProvider = services.BuildServiceProvider();
+
+            var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
+            await settingsService.InitializeAsync();
+
+            var currentSettings = settingsService.GetSettings();
+            if (currentSettings != null)
             {
-                var services = new ServiceCollection();
-                ConfigureServices(services);
-                _serviceProvider = services.BuildServiceProvider();
-
-                var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
-                await settingsService.InitializeAsync(); 
-
-                var currentSettings = settingsService.GetSettings(); 
-                if (currentSettings != null)
-                {
-                    ApplyTheme(currentSettings.SelectedTheme); 
-                }
-                else
-                {
-                    Console.WriteLine("CRITICAL: currentSettings is null in App.axaml.cs. Applying default theme.");
-                    ApplyTheme(ThemeType.Default); 
-                }
-
-                _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-                desktop.MainWindow = _mainWindow;
-                
-                App.StartupArgs = desktop.Args?.ToList() ?? new List<string>();
-                
-                desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-                desktop.Exit += OnExit;
+                ApplyTheme(currentSettings.SelectedTheme);
+            }
+            else
+            {
+                Console.WriteLine("CRITICAL: currentSettings is null in App.axaml.cs. Applying default theme.");
+                ApplyTheme(ThemeType.Default);
             }
 
-            base.OnFrameworkInitializationCompleted();
-        }
-        
-        public void ApplyTheme(ThemeType themeType)
-        {
-            switch (themeType)
-            {
-                case ThemeType.Light:
-                    RequestedThemeVariant = ThemeVariant.Light;
-                    break;
-                case ThemeType.Dark:
-                    RequestedThemeVariant = ThemeVariant.Dark;
-                    break;
-                case ThemeType.Default:
-                default:
-                    RequestedThemeVariant = ThemeVariant.Default;
-                    break;
-            }
+            _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            desktop.MainWindow = _mainWindow;
+
+            StartupArgs = desktop.Args?.ToList() ?? new List<string>();
+
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            desktop.Exit += OnExit;
         }
 
-        public static void OnFileOpened(string filePath)
-        {
-            if (Current is App app && app._mainWindow is MainWindow mainWindow)
-            {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (!mainWindow.IsVisible) mainWindow.Show();
-                    mainWindow.Show();
-                    mainWindow.LoadFile(filePath, "", true);
-                });
-            }
-        }
+        base.OnFrameworkInitializationCompleted();
+    }
 
-        private void ConfigureServices(IServiceCollection services)
+    public void ApplyTheme(ThemeType themeType)
+    {
+        switch (themeType)
         {
-            services.AddSingleton<TorrentManagerService>();
-            services.AddSingleton<SettingsService>(provider => 
-                new SettingsService(provider.GetRequiredService<TorrentManagerService>())
-            );
-
-            services.AddTransient<MainWindow>();
-            services.AddTransient<SettingsWindow>();
-            services.AddTransient<AddTorrentDialog>();
+            case ThemeType.Light:
+                RequestedThemeVariant = ThemeVariant.Light;
+                break;
+            case ThemeType.Dark:
+                RequestedThemeVariant = ThemeVariant.Dark;
+                break;
+            case ThemeType.Default:
+            default:
+                RequestedThemeVariant = ThemeVariant.Default;
+                break;
         }
+    }
 
-        public static T GetService<T>() where T : class
+    public static void OnFileOpened(string filePath)
+    {
+        if (Current is App app && app._mainWindow is MainWindow mainWindow)
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!mainWindow.IsVisible) mainWindow.Show();
+                mainWindow.Show();
+                mainWindow.LoadFile(filePath, "", true);
+            });
+    }
+
+    private void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<TorrentManagerService>();
+        services.AddSingleton<SettingsService>(provider =>
+            new SettingsService(provider.GetRequiredService<TorrentManagerService>())
+        );
+
+        services.AddTransient<MainWindow>();
+        services.AddTransient<SettingsWindow>();
+        services.AddTransient<AddTorrentDialog>();
+    }
+
+    public static T GetService<T>() where T : class
+    {
+        if (((App)Current)._serviceProvider == null)
+            throw new InvalidOperationException("ServiceProvider is not initialized yet.");
+        return ((App)Current)._serviceProvider.GetRequiredService<T>();
+    }
+
+    private void TrayShow()
+    {
+        if (_mainWindow != null)
         {
-            if (((App)Current)._serviceProvider == null)
-            {
-                throw new InvalidOperationException("ServiceProvider is not initialized yet.");
-            }
-            return ((App)Current)._serviceProvider.GetRequiredService<T>();
+            if (!_mainWindow.IsVisible) _mainWindow.Show();
+            _mainWindow.WindowState = WindowState.Normal;
+            _mainWindow.Activate();
         }
+    }
 
-        private void TrayShow()
-        {
-            if (_mainWindow != null)
-            {
-                if (!_mainWindow.IsVisible)
-                {
-                    _mainWindow.Show();
-                }
-                _mainWindow.WindowState = WindowState.Normal;
-                _mainWindow.Activate();
-            }
-        }
+    private async void OnExit(object sender, ControlledApplicationLifetimeExitEventArgs e)
+    {
+        if (_serviceProvider == null) return;
+        var torrentManager = _serviceProvider.GetService<TorrentManagerService>();
+        if (torrentManager != null) await torrentManager.SaveAllTorrentsStateAsync();
 
-        private async void OnExit(object sender, ControlledApplicationLifetimeExitEventArgs e)
-        {
-            if (_serviceProvider == null) return; 
-            var torrentManager = _serviceProvider.GetService<TorrentManagerService>();
-            if (torrentManager != null)
-            {
-                await torrentManager.SaveAllTorrentsStateAsync();
-            }
-            
-            if (_mainWindow is MainWindow mainWindow)
-            {
-                await mainWindow.SaveSessionAsync();
-            }
-            
-            var settingsService = _serviceProvider.GetService<SettingsService>();
-            settingsService?.SaveSettings();
-        }
+        if (_mainWindow is MainWindow mainWindow) await mainWindow.SaveSessionAsync();
 
-        public void TrayExit()
-        {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                desktop.Shutdown();
-            }
-        }
+        var settingsService = _serviceProvider.GetService<SettingsService>();
+        settingsService?.SaveSettings();
+    }
+
+    public void TrayExit()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.Shutdown();
     }
 }
