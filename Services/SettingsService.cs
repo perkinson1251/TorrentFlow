@@ -1,10 +1,9 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Avalonia.Controls;
 using TorrentFlow.Data;
+using TorrentFlow.Enums;
 
 namespace TorrentFlow.Services
 {
@@ -17,9 +16,50 @@ namespace TorrentFlow.Services
 
         public SettingsService(TorrentManagerService torrentManagerService)
         {
-            _torrentManagerService = torrentManagerService;
+            _torrentManagerService = torrentManagerService ?? throw new ArgumentNullException(nameof(torrentManagerService));
             _settingsFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SettingsFileName);
-            LoadSettings();
+            LoadSettingsInternal(); 
+        }
+
+        public async Task InitializeAsync()
+        {
+            await ApplySpeedLimitAsync();
+        }
+
+        private void LoadSettingsInternal()
+        {
+            try
+            {
+                if (File.Exists(_settingsFilePath))
+                {
+                    var json = File.ReadAllText(_settingsFilePath);
+                    _settings = JsonSerializer.Deserialize<Settings>(json);
+                    if (_settings == null)
+                    {
+                        Console.WriteLine("Settings deserialized to null, using default settings.");
+                        _settings = CreateDefaultSettings();
+                    }
+                }
+                else
+                {
+                    _settings = CreateDefaultSettings();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading settings: {ex.Message}. Using default settings.");
+                _settings = CreateDefaultSettings();
+            }
+        }
+        
+        private Settings CreateDefaultSettings()
+        {
+            return new Settings
+            {
+                DefaultSaveLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Torrents"),
+                MaxDownloadSpeedKBps = 0,
+                SelectedTheme = ThemeType.Default
+            };
         }
 
         public Settings GetSettings()
@@ -29,8 +69,8 @@ namespace TorrentFlow.Services
 
         public async Task UpdateSettings(Settings newSettings)
         {
-            _settings = newSettings;
-            SaveSettings();
+            _settings = newSettings ?? throw new ArgumentNullException(nameof(newSettings));
+            SaveSettingsInternal();
             await ApplySpeedLimitAsync();
         }
 
@@ -41,50 +81,23 @@ namespace TorrentFlow.Services
                 await _torrentManagerService.SetSpeed(_settings.MaxDownloadSpeedKBps);
             }
         }
-
-        private async void LoadSettings()
-        {
-            try
-            {
-                if (File.Exists(_settingsFilePath))
-                {
-                    var json = await File.ReadAllTextAsync(_settingsFilePath);
-                    _settings = JsonSerializer.Deserialize<Settings>(json) ?? CreateDefaultSettings();
-                }
-                else
-                {
-                    _settings = CreateDefaultSettings();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading settings: {ex.Message}");
-                _settings = CreateDefaultSettings();
-            }
-            await ApplySpeedLimitAsync(); // Apply speed limit on load
-        }
-
-        private Settings CreateDefaultSettings()
-        {
-            return new Settings
-            {
-                DefaultSaveLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Torrents"), // Example default
-                MaxDownloadSpeedKBps = 0 // Unlimited
-            };
-        }
-
-        public async void SaveSettings()
+        
+        private void SaveSettingsInternal()
         {
             try
             {
                 var json = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_settingsFilePath, json);
-                await ApplySpeedLimitAsync(); // Re-apply speed limit on save
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error saving settings: {ex.Message}");
             }
+        }
+
+        public void SaveSettings()
+        {
+            SaveSettingsInternal();
         }
     }
 }

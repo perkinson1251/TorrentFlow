@@ -1,12 +1,11 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage; // Required for IStorageFolder and StorageProvider
+using Avalonia.Platform.Storage;
 using System;
 using System.ComponentModel;
-using System.IO; // Required for Path
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using TorrentFlow.Data;
+using Avalonia;
+using TorrentFlow.Enums; 
 using TorrentFlow.Services;
 
 namespace TorrentFlow
@@ -46,6 +45,22 @@ namespace TorrentFlow
             }
         }
         
+        private ThemeType _tempSelectedTheme;
+        public ThemeType TempSelectedTheme
+        {
+            get => _tempSelectedTheme;
+            set
+            {
+                if (_tempSelectedTheme != value)
+                {
+                    _tempSelectedTheme = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public Array ThemeTypes => Enum.GetValues(typeof(ThemeType));
+        
         public SettingsWindow(SettingsService settingsService)
         {
             _settingsService = settingsService;
@@ -59,6 +74,7 @@ namespace TorrentFlow
             var settings = _settingsService.GetSettings();
             TempDefaultSaveLocation = settings.DefaultSaveLocation;
             TempMaxDownloadSpeedKBps = settings.MaxDownloadSpeedKBps;
+            TempSelectedTheme = settings.SelectedTheme;
         }
         
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -75,8 +91,6 @@ namespace TorrentFlow
 
             if (result != null && result.Count > 0)
             {
-                // IStorageFolder itself doesn't have TryGetLocalPath directly, 
-                // but it implements IStorageItem which has this extension method.
                 string localPath = result[0].TryGetLocalPath(); 
                 if (!string.IsNullOrEmpty(localPath))
                 {
@@ -96,8 +110,14 @@ namespace TorrentFlow
             var settings = _settingsService.GetSettings();
             settings.DefaultSaveLocation = TempDefaultSaveLocation;
             settings.MaxDownloadSpeedKBps = TempMaxDownloadSpeedKBps;
+            settings.SelectedTheme = TempSelectedTheme;
             
-            await _settingsService.UpdateSettings(settings); 
+            await _settingsService.UpdateSettings(settings);
+            
+            if (Application.Current is App app)
+            {
+                app.ApplyTheme(settings.SelectedTheme);
+            }
             Close();
         }
         

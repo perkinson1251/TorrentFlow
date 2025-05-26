@@ -1,35 +1,52 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:TorrentFlow"
+        xmlns:enums="using:TorrentFlow.Enums"
         x:Class="TorrentFlow.SettingsWindow"
         Title="Settings"
-        Width="500"
-        CanResize="False"
+        Width="500" CanResize="False"
         SizeToContent="Height">
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+  <Window.Resources>
+    <local:EnumDescriptionConverter x:Key="EnumToDescriptionConverter"/>
+  </Window.Resources>
+
+  <Grid Margin="15">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/> <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
     
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
-            <TextBlock Text="Default Save Location:" VerticalAlignment="Center"/>
-            <TextBox Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}" Width="250" Watermark="e.g., D:\Torrents"/>
-            <Button Content="Browse" Click="BrowseButton_Click"/>
-        </StackPanel>
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
+      <TextBlock Text="Default Save Location:" VerticalAlignment="Center"/>
+      <TextBox Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}" Width="250" Watermark="e.g., D:\Torrents"/>
+      <Button Content="Browse" Click="BrowseButton_Click"/>
+    </StackPanel>
     
-        <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5" Margin="0,0,0,15">
-            <TextBlock Text="Max Download Speed (KB/s):" VerticalAlignment="Center"/>
-            <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}" Width="150" Watermark="0 for unlimited"/>
-            <TextBlock Text="Enter 0 for unlimited speed." FontSize="10" Foreground="Gray"/>
-        </StackPanel>
+    <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5" Margin="0,0,0,15">
+        <TextBlock Text="Max Download Speed (KB/s):" VerticalAlignment="Center"/>
+        <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}" Width="150" Watermark="0 for unlimited"/>
+        <TextBlock Text="Enter 0 for unlimited speed." FontSize="10" Foreground="Gray"/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
+        <TextBlock Text="Application Theme:" VerticalAlignment="Center"/>
+        <ComboBox ItemsSource="{Binding ThemeTypes}"
+                  SelectedItem="{Binding TempSelectedTheme, Mode=TwoWay}"
+                  Width="200">
+            <ComboBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type enums:ThemeType}">
+                    <TextBlock Text="{Binding Converter={StaticResource EnumToDescriptionConverter}}"/>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+    </StackPanel>
     
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,15,0,0">
-            <Button Content="Save" Click="SaveButton_Click" Width="80"/>
-            <Button Content="Cancel" Click="CancelButton_Click" Width="80"/>
-        </StackPanel>
-    </Grid>
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,15,0,0">
+      <Button Content="Save" Click="SaveButton_Click" Width="80"/>
+      <Button Content="Cancel" Click="CancelButton_Click" Width="80"/>
+    </StackPanel>
+  </Grid>
 </Window>

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Input;
+using TorrentFlow.Enums;
 using TorrentFlow.Services;
+using TorrentFlow.Data;
 
 namespace TorrentFlow
 {
@@ -32,7 +35,7 @@ namespace TorrentFlow
             AvaloniaXamlLoader.Load(this);
         }
 
-        public override void OnFrameworkInitializationCompleted()
+        public override async void OnFrameworkInitializationCompleted()
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -40,9 +43,23 @@ namespace TorrentFlow
                 ConfigureServices(services);
                 _serviceProvider = services.BuildServiceProvider();
 
+                var settingsService = _serviceProvider.GetRequiredService<SettingsService>();
+                await settingsService.InitializeAsync(); 
+
+                var currentSettings = settingsService.GetSettings(); 
+                if (currentSettings != null)
+                {
+                    ApplyTheme(currentSettings.SelectedTheme); 
+                }
+                else
+                {
+                    Console.WriteLine("CRITICAL: currentSettings is null in App.axaml.cs. Applying default theme.");
+                    ApplyTheme(ThemeType.Default); 
+                }
+
                 _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 desktop.MainWindow = _mainWindow;
-
+                
                 App.StartupArgs = desktop.Args?.ToList() ?? new List<string>();
                 
                 desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -50,6 +67,23 @@ namespace TorrentFlow
             }
 
             base.OnFrameworkInitializationCompleted();
+        }
+        
+        public void ApplyTheme(ThemeType themeType)
+        {
+            switch (themeType)
+            {
+                case ThemeType.Light:
+                    RequestedThemeVariant = ThemeVariant.Light;
+                    break;
+                case ThemeType.Dark:
+                    RequestedThemeVariant = ThemeVariant.Dark;
+                    break;
+                case ThemeType.Default:
+                default:
+                    RequestedThemeVariant = ThemeVariant.Default;
+                    break;
+            }
         }
 
         public static void OnFileOpened(string filePath)
@@ -112,6 +146,9 @@ namespace TorrentFlow
             {
                 await mainWindow.SaveSessionAsync();
             }
+            
+            var settingsService = _serviceProvider.GetService<SettingsService>();
+            settingsService?.SaveSettings();
         }
 
         public void TrayExit()
