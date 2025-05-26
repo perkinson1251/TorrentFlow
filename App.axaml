@@ -1,16 +1,26 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:TorrentFlow.Converters"
              x:Class="TorrentFlow.App"
+             xmlns:local="clr-namespace:TorrentFlow"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
-
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
     </Application.Styles>
-             
-     <Application.Resources>
-         <converters:BytesToKilobytesConverter x:Key="BytesToKilobytesConverter"/>
-     </Application.Resources>
+    <TrayIcon.Icons>
+        <TrayIcons>
+            <TrayIcon Icon="/Assets/icon.ico" ToolTipText="TorrentFlow">
+                <TrayIcon.Menu>
+                    <NativeMenu>
+                        <NativeMenuItem Header="Profile">
+                            <NativeMenu>
+                            </NativeMenu>
+                        </NativeMenuItem>
+                        <NativeMenuItem Header="Show" Command="{Binding ShowCommand, Source={x:Static local:App.Current}}" />
+                        <NativeMenuItem Header="Exit" Command="{Binding ExitCommand, Source={x:Static local:App.Current}}" />
+                    </NativeMenu>
+                </TrayIcon.Menu>
+            </TrayIcon>
+        </TrayIcons>
+    </TrayIcon.Icons>
 </Application>

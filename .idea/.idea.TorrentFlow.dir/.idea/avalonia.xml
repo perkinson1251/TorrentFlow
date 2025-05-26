@@ -3,7 +3,9 @@
   <component name="AvaloniaProject">
     <option name="projectPerEditor">
       <map>
+        <entry key="AddTorrentDialog.axaml" value="TorrentFlow.csproj" />
         <entry key="App.axaml" value="TorrentFlow.csproj" />
+        <entry key="LoadingDialog.axaml" value="TorrentFlow.csproj" />
         <entry key="MainWindow.axaml" value="TorrentFlow.csproj" />
         <entry key="SettingsWindow.axaml" value="TorrentFlow.csproj" />
       </map>

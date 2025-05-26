@@ -1,11 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaUseCompiledXaml>true</AvaloniaUseCompiledXaml>
+    <AvaloniaUseCompiledBindingsByDefault>False</AvaloniaUseCompiledBindingsByDefault>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <SelfContained>true</SelfContained>
+    <Configuration>Release</Configuration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,9 +27,12 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="DefensiveProgrammingFramework" Version="1.0.6" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Library\" />
+    <PackageReference Include="DesktopNotifications.Avalonia" Version="1.3.1" />
+    <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
+    <PackageReference Include="MonoTorrent" Version="3.0.2" />
+    <AvaloniaResource Include="Assets/icon.ico" />
+    <AvaloniaResource Include="Assets/settings_icon.ico" />
   </ItemGroup>
 </Project>
