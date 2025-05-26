@@ -9,15 +9,15 @@ namespace TorrentFlow
     public class TorrentView : INotifyPropertyChanged
     {
         private readonly TorrentManager _torrentManager;
-        private string _downloadSpeedString; // Змінено
-        private string _uploadSpeedString;   // Змінено
+        private string _downloadSpeedString;
+        private string _uploadSpeedString;
         public string FileName { get; set; }
         public string Name => _torrentManager.Torrent.Name;
         public string SavePath => _torrentManager.SavePath;
-        public double Progress => _torrentManager.Complete ? 100 : Math.Round(_torrentManager.Progress, 2); // Додано округлення для прогресу
+        public double Progress => _torrentManager.Complete ? 100 : Math.Round(_torrentManager.Progress, 2);
         public bool Completed => _torrentManager.Complete;
 
-        public string DownloadSpeed // Змінено тип на string
+        public string DownloadSpeed
         {
             get => _downloadSpeedString;
             set
@@ -30,7 +30,7 @@ namespace TorrentFlow
             }
         }
 
-        public string UploadSpeed // Змінено тип на string
+        public string UploadSpeed
         {
             get => _uploadSpeedString;
             set
@@ -43,7 +43,20 @@ namespace TorrentFlow
             }
         }
 
-        public TorrentState Status => _torrentManager.State;
+        public TorrentState Status
+        {
+            get
+            {
+                var currentState = _torrentManager.State;
+                
+                if (_torrentManager.Complete && currentState != TorrentState.Seeding)
+                {
+                    return TorrentState.Stopped;
+                }
+                
+                return currentState;
+            }
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -51,15 +64,19 @@ namespace TorrentFlow
         {
             _torrentManager = manager;
             _torrentManager.TorrentStateChanged += (_, __) => OnPropertyChanged(nameof(Status));
-            // Ініціалізація значень швидкостей
             UpdateSpeeds();
         }
 
-        public void UpdateProgress() => OnPropertyChanged(nameof(Progress));
+        public void UpdateProgress() 
+        {
+            OnPropertyChanged(nameof(Progress));
+            OnPropertyChanged(nameof(Status));
+            OnPropertyChanged(nameof(Completed));
+        }
 
         private static string FormatSpeed(double speedInKB)
         {
-            if (speedInKB < 0) speedInKB = 0; // Переконаємося, що швидкість не від'ємна
+            if (speedInKB < 0) speedInKB = 0;
 
             if (speedInKB < 1024)
             {
@@ -79,8 +96,8 @@ namespace TorrentFlow
         {
             Dispatcher.UIThread.Post(() =>
             {
-                DownloadSpeed = FormatSpeed(_torrentManager.Monitor.DownloadRate / 1024.0); // Використовуємо KB для розрахунку
-                UploadSpeed = FormatSpeed(_torrentManager.Monitor.UploadRate / 1024.0);   // Використовуємо KB для розрахунку
+                DownloadSpeed = FormatSpeed(_torrentManager.Monitor.DownloadRate / 1024.0);
+                UploadSpeed = FormatSpeed(_torrentManager.Monitor.UploadRate / 1024.0);
             });
         }
 

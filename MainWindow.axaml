@@ -14,6 +14,7 @@
         <local:InverseEmptyListVisibilityConverter x:Key="InverseEmptyListVisibilityConverter" />
         <local:PauseButtonVisibilityConverter x:Key="PauseButtonVisibilityConverter" />
         <local:ResumeButtonVisibilityConverter x:Key="ResumeButtonVisibilityConverter" />
+        <local:TorrentStatusConverter x:Key="TorrentStatusConverter" />
     </Window.Resources>
 
     <Window.Styles>
@@ -148,7 +149,8 @@
 
                                     <Border Grid.Column="1" Background="{DynamicResource SystemAccentColor}"
                                             CornerRadius="12" Padding="8,4">
-                                        <TextBlock Text="{Binding Status}"
+                                        <!-- Використовуємо новий конвертер для українських назв -->
+                                        <TextBlock Text="{Binding Status, Converter={StaticResource TorrentStatusConverter}}"
                                                    Foreground="White" FontSize="12" FontWeight="SemiBold" />
                                     </Border>
                                 </Grid>
