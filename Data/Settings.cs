@@ -1,10 +1,15 @@
-using System.Collections.Generic;
 
 namespace TorrentFlow.Data
 {
     public class Settings
     {
         public string DefaultSaveLocation { get; set; }
-        public List<SpeedProfileEntry> SpeedProfiles { get; set; } = new List<SpeedProfileEntry>();
+        public int MaxDownloadSpeedKBps { get; set; }
+
+        public Settings()
+        {
+            DefaultSaveLocation = string.Empty;
+            MaxDownloadSpeedKBps = 0;
+        }
     }
 }

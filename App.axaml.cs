@@ -16,7 +16,6 @@ namespace TorrentFlow
     public partial class App : Application
     {        
         private IServiceProvider _serviceProvider;
-        private SettingsService _settingsService;
         private Window _mainWindow;
         public ICommand ExitCommand { get; }
         public ICommand ShowCommand { get; }
@@ -44,10 +43,7 @@ namespace TorrentFlow
                 _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
                 desktop.MainWindow = _mainWindow;
 
-                _settingsService = _serviceProvider.GetRequiredService<SettingsService>();
-                _settingsService.UpdateTray(this);
-
-                App.StartupArgs = desktop.Args.ToList();
+                App.StartupArgs = desktop.Args?.ToList() ?? new List<string>();
                 
                 desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 desktop.Exit += OnExit;
@@ -62,6 +58,7 @@ namespace TorrentFlow
             {
                 Dispatcher.UIThread.Post(() =>
                 {
+                    if (!mainWindow.IsVisible) mainWindow.Show();
                     mainWindow.Show();
                     mainWindow.LoadFile(filePath, "", true);
                 });
@@ -71,7 +68,9 @@ namespace TorrentFlow
         private void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<TorrentManagerService>();
-            services.AddSingleton<SettingsService>();
+            services.AddSingleton<SettingsService>(provider => 
+                new SettingsService(provider.GetRequiredService<TorrentManagerService>())
+            );
 
             services.AddTransient<MainWindow>();
             services.AddTransient<SettingsWindow>();
@@ -80,6 +79,10 @@ namespace TorrentFlow
 
         public static T GetService<T>() where T : class
         {
+            if (((App)Current)._serviceProvider == null)
+            {
+                throw new InvalidOperationException("ServiceProvider is not initialized yet.");
+            }
             return ((App)Current)._serviceProvider.GetRequiredService<T>();
         }
 
@@ -87,20 +90,28 @@ namespace TorrentFlow
         {
             if (_mainWindow != null)
             {
-                if (!_mainWindow.IsVisible || _mainWindow.WindowState == WindowState.Minimized)
+                if (!_mainWindow.IsVisible)
                 {
                     _mainWindow.Show();
-                    _mainWindow.WindowState = WindowState.Normal;
                 }
+                _mainWindow.WindowState = WindowState.Normal;
                 _mainWindow.Activate();
             }
         }
 
         private async void OnExit(object sender, ControlledApplicationLifetimeExitEventArgs e)
         {
-            var torrentManager = _serviceProvider.GetRequiredService<TorrentManagerService>();
-            await torrentManager.SaveAllTorrentsStateAsync();
-            await ((MainWindow)_mainWindow).SaveSessionAsync();
+            if (_serviceProvider == null) return; 
+            var torrentManager = _serviceProvider.GetService<TorrentManagerService>();
+            if (torrentManager != null)
+            {
+                await torrentManager.SaveAllTorrentsStateAsync();
+            }
+            
+            if (_mainWindow is MainWindow mainWindow)
+            {
+                await mainWindow.SaveSessionAsync();
+            }
         }
 
         public void TrayExit()

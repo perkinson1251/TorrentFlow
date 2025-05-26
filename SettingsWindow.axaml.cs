@@ -1,13 +1,12 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
+using Avalonia.Platform.Storage; // Required for IStorageFolder and StorageProvider
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO; // Required for Path
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using TorrentFlow.Data;
-using TorrentFlow.Enums;
 using TorrentFlow.Services;
 
 namespace TorrentFlow
@@ -32,17 +31,16 @@ namespace TorrentFlow
                 }
             }
         }
-        public Array SpeedUnitTypes => Enum.GetValues(typeof(SpeedUnitType));
 
-        private ObservableCollection<SpeedProfileEntry> _speedProfiles;
-        public ObservableCollection<SpeedProfileEntry> SpeedProfiles
+        private int _tempMaxDownloadSpeedKBps;
+        public int TempMaxDownloadSpeedKBps
         {
-            get => _speedProfiles;
+            get => _tempMaxDownloadSpeedKBps;
             set
             {
-                if (_speedProfiles != value)
+                if (_tempMaxDownloadSpeedKBps != value)
                 {
-                    _speedProfiles = value;
+                    _tempMaxDownloadSpeedKBps = value;
                     OnPropertyChanged();
                 }
             }
@@ -52,7 +50,6 @@ namespace TorrentFlow
         {
             _settingsService = settingsService;
             DataContext = this;
-
             InitializeComponent();
             LoadSettings();
         }
@@ -61,39 +58,46 @@ namespace TorrentFlow
         {
             var settings = _settingsService.GetSettings();
             TempDefaultSaveLocation = settings.DefaultSaveLocation;
-            SpeedProfiles = new ObservableCollection<SpeedProfileEntry>(settings.SpeedProfiles ?? new List<SpeedProfileEntry>());
+            TempMaxDownloadSpeedKBps = settings.MaxDownloadSpeedKBps;
         }
         
         private async void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            var folderDialog = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            if (this.StorageProvider == null) return;
+
+            var folderPickerOptions = new FolderPickerOpenOptions
             {
-                Title = "Select Save Location",
-                AllowMultiple = false
-            });
-            if (folderDialog.Count > 0)
+                Title = "Select Default Save Location",
+                AllowMultiple = false,
+            };
+
+            var result = await this.StorageProvider.OpenFolderPickerAsync(folderPickerOptions);
+
+            if (result != null && result.Count > 0)
             {
-                TempDefaultSaveLocation = folderDialog[0].Path.LocalPath;
-            }
-        }
-        private void AddProfileButton_Click(object sender, RoutedEventArgs e)
-        {
-            SpeedProfiles.Add(new SpeedProfileEntry { ProfileName = "", Speed = 0, UnitType = SpeedUnitType.Mb });
-        }
-        private void RemoveProfile_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.DataContext is SpeedProfileEntry profile)
-            {
-                SpeedProfiles.Remove(profile);
+                // IStorageFolder itself doesn't have TryGetLocalPath directly, 
+                // but it implements IStorageItem which has this extension method.
+                string localPath = result[0].TryGetLocalPath(); 
+                if (!string.IsNullOrEmpty(localPath))
+                {
+                    TempDefaultSaveLocation = localPath;
+                }
+                else
+                {
+                    // Fallback or error if a local path couldn't be obtained
+                    Console.WriteLine($"Could not retrieve a local path for the selected folder: {result[0].Name}");
+                    // Optionally show a message to the user
+                }
             }
         }
         
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             var settings = _settingsService.GetSettings();
             settings.DefaultSaveLocation = TempDefaultSaveLocation;
-            settings.SpeedProfiles = new List<SpeedProfileEntry>(SpeedProfiles);
-            _settingsService.SaveSettings();
+            settings.MaxDownloadSpeedKBps = TempMaxDownloadSpeedKBps;
+            
+            await _settingsService.UpdateSettings(settings); 
             Close();
         }
         

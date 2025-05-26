@@ -12,10 +12,6 @@
             <TrayIcon Icon="/Assets/icon.ico" ToolTipText="TorrentFlow">
                 <TrayIcon.Menu>
                     <NativeMenu>
-                        <NativeMenuItem Header="Profile">
-                            <NativeMenu>
-                            </NativeMenu>
-                        </NativeMenuItem>
                         <NativeMenuItem Header="Show" Command="{Binding ShowCommand, Source={x:Static local:App.Current}}" />
                         <NativeMenuItem Header="Exit" Command="{Binding ExitCommand, Source={x:Static local:App.Current}}" />
                     </NativeMenu>

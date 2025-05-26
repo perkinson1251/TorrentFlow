@@ -1,61 +1,35 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:TorrentFlow"
-        xmlns:enums="using:TorrentFlow.Enums"
         x:Class="TorrentFlow.SettingsWindow"
         Title="Settings"
-        Width="500" Height="450">
+        Width="500"
+        CanResize="False"
+        SizeToContent="Height">
 
-  <Window.Resources>
-    <local:EnumDescriptionConverter x:Key="EnumToDescriptionConverter"/>
-  </Window.Resources>
-
-  <Grid Margin="10">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-      <RowDefinition Height="Auto"/>
-    </Grid.RowDefinitions>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
     
-    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
-      <TextBlock Text="Save Location:" VerticalAlignment="Center"/>
-      <TextBox Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}" Width="250"/>
-      <Button Content="Browse" Click="BrowseButton_Click"/>
-    </StackPanel>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,15">
+            <TextBlock Text="Default Save Location:" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding TempDefaultSaveLocation, Mode=TwoWay}" Width="250" Watermark="e.g., D:\Torrents"/>
+            <Button Content="Browse" Click="BrowseButton_Click"/>
+        </StackPanel>
     
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,10,0,5">
-      <TextBlock Text="Profiles:" VerticalAlignment="Center" FontWeight="Bold"/>
-    </StackPanel>
+        <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5" Margin="0,0,0,15">
+            <TextBlock Text="Max Download Speed (KB/s):" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}" Width="150" Watermark="0 for unlimited"/>
+            <TextBlock Text="Enter 0 for unlimited speed." FontSize="10" Foreground="Gray"/>
+        </StackPanel>
     
-    <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="5">
-        <ScrollViewer>
-            <ItemsControl ItemsSource="{Binding SpeedProfiles}">
-                <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type local:Data.SpeedProfileEntry}">
-                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,5">
-                        <TextBox Text="{Binding ProfileName, Mode=TwoWay}" Width="168" Watermark="Profile Name"/>
-                        <TextBox Text="{Binding Speed, Mode=TwoWay}" Width="80" Watermark="Speed"/>
-                        <ComboBox ItemsSource="{Binding DataContext.SpeedUnitTypes, RelativeSource={RelativeSource AncestorType=Window}}"
-                                  SelectedItem="{Binding UnitType, Mode=TwoWay}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate DataType="{x:Type enums:SpeedUnitType}">
-                                    <TextBlock Text="{Binding Converter={StaticResource EnumToDescriptionConverter}}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                        <Button Content="Remove" Click="RemoveProfile_Click" Width="80"/>
-                    </StackPanel>
-                </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
-    </Border>
-    
-    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,10,0,0">
-      <Button Content="Add Profile" Click="AddProfileButton_Click" Width="100"/>
-      <Button Content="Save" Click="SaveButton_Click" Width="80"/>
-      <Button Content="Cancel" Click="CancelButton_Click" Width="80"/>
-    </StackPanel>
-  </Grid>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,15,0,0">
+            <Button Content="Save" Click="SaveButton_Click" Width="80"/>
+            <Button Content="Cancel" Click="CancelButton_Click" Width="80"/>
+        </StackPanel>
+    </Grid>
 </Window>
