@@ -65,16 +65,23 @@ namespace TorrentFlow.Services
             return metadataMemory.ToArray();
         }
 
-                public async Task<TorrentManager> StartTorrentAsync(Torrent torrent, string savePath, bool startOnAdd)
+        public async Task<TorrentManager> StartTorrentAsync(Torrent torrent, string savePath, bool startOnAdd)
         {
             if (activeTorrents.ContainsKey(torrent.Name))
             {
                 return activeTorrents[torrent.Name];
             }
 
+            var existingManager = engine.Torrents.FirstOrDefault(t => t.Torrent?.Name == torrent.Name);
+            if (existingManager != null)
+            {
+                activeTorrents[torrent.Name] = existingManager;
+                return existingManager;
+            }
+
             var fastResumePath = GetFastResumeFilePath(torrent.Name);
             // TorrentSettings are per-torrent, not engine-wide speed limits.
-            TorrentSettings torrentSettings =  new TorrentSettingsBuilder().ToSettings(); 
+            TorrentSettings torrentSettings = new TorrentSettingsBuilder().ToSettings(); 
             TorrentManager manager;
 
             if (File.Exists(fastResumePath))
@@ -159,12 +166,16 @@ namespace TorrentFlow.Services
                     }
                 }
 
-                activeTorrents.Remove(torrentName);
+                // activeTorrents.Remove(torrentName); // Перенесено вниз
                 
-                if(manager.State == TorrentState.Stopping)
-                    return;
-                    
-                await manager.StopAsync(); // Ensure torrent is stopped before removing
+                if(manager.State != TorrentState.Stopping && manager.State != TorrentState.Stopped)
+                {
+                    await manager.StopAsync(); // Ensure torrent is stopped before removing
+                }
+                
+                await engine.RemoveAsync(manager); // Remove from engine FIRST
+                
+                activeTorrents.Remove(torrentName);
                 
                 // Optionally delete downloaded files
                 if(deleteFiles)
@@ -208,7 +219,6 @@ namespace TorrentFlow.Services
                         Console.WriteLine($"Error deleting torrent files for {torrentName}: {ex.Message}");
                     }
                 }
-                await engine.RemoveAsync(manager); // Remove from engine
             }
         }
 
