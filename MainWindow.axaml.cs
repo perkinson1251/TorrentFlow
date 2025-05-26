@@ -58,12 +58,12 @@ namespace TorrentFlow
                 if (arg.StartsWith("magnetic", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("Loading magnetic link: " + arg);
-                    LoadFile(arg, "", true);
+                    await LoadFile(arg, "", true);
                 }
                 if (arg.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("Loading torrent: " + arg);
-                    LoadFile(arg, "", true);
+                    await LoadFile(arg, "", true);
                 }
             }
         }
@@ -129,13 +129,15 @@ namespace TorrentFlow
 
                 torrent = Torrent.Load(tempFilePath);
 
+                // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI
                 if (Torrents.Any(t => t.Name == torrent.Name))
                 {
                     ShowWarning($"The torrent \"{torrent.Name}\" is already downloading.");
                     return;
                 }
             }
-            if(savePath == string.Empty)
+            
+            if(string.IsNullOrEmpty(savePath))
             {
                 var addTorrentDialog = new AddTorrentDialog(torrent.Name);
                 savePath = await addTorrentDialog.ShowDialog<string>(this);
@@ -143,10 +145,28 @@ namespace TorrentFlow
 
             if (!string.IsNullOrWhiteSpace(savePath))
             {
-                var torrentManager = await _torrentManager.StartTorrentAsync(torrent, savePath, startOnAdd);
-                var torrentView = new TorrentView(torrentManager);
-                torrentView.FileName = tempFilePath;
-                Torrents.Add(torrentView);
+                try
+                {
+                    var torrentManager = await _torrentManager.StartTorrentAsync(torrent, savePath, startOnAdd);
+                    
+                    // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI перед додаванням
+                    if (!Torrents.Any(t => t.Name == torrent.Name))
+                    {
+                        var torrentView = new TorrentView(torrentManager);
+                        torrentView.FileName = tempFilePath;
+                        Torrents.Add(torrentView);
+                        Console.WriteLine($"Added torrent to UI: {torrent.Name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Torrent already exists in UI: {torrent.Name}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading torrent {torrent?.Name}: {ex.Message}");
+                    ShowWarning($"Error loading torrent: {ex.Message}");
+                }
             }
         }
 
@@ -211,7 +231,14 @@ namespace TorrentFlow
 
                 if(torrent.FileName.EndsWith(".torrent"))
                 {
-                    File.Delete(Path.Combine(torrent.FileName));
+                    try
+                    {
+                        File.Delete(Path.Combine(torrent.FileName));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Could not delete torrent file {torrent.FileName}: {ex.Message}");
+                    }
                 }
 
                 await SaveSessionAsync();
@@ -226,6 +253,8 @@ namespace TorrentFlow
                 torrent.UpdateProgress();
                 torrent.UpdateSpeeds();
             }
+            
+            // ВИПРАВЛЕННЯ: Зберігаємо fast resume рідше і тільки для активних торентів
             await _torrentManager.SaveAllTorrentsStateAsync();
             await SaveSessionAsync();
         }
@@ -251,37 +280,63 @@ namespace TorrentFlow
                 }
             }
         }
+        
         public async Task SaveSessionAsync()
         {
-            await _torrentManager.SaveAllTorrentsStateAsync();
-            var session = new SessionData();
-            foreach (var kvp in Torrents)
+            try
             {
-                session.Torrents.Add(new TorrentSessionItem 
-                { 
-                    TorrentFile = kvp.FileName, 
-                    SavePath = kvp.SavePath,
-                    State = kvp.Status
-                });
+                var session = new SessionData();
+                foreach (var kvp in Torrents)
+                {
+                    session.Torrents.Add(new TorrentSessionItem 
+                    { 
+                        TorrentFile = kvp.FileName, 
+                        SavePath = kvp.SavePath,
+                        State = kvp.Status
+                    });
+                }
+                string json = System.Text.Json.JsonSerializer.Serialize(session);
+                await File.WriteAllTextAsync(_sessionDirectory, json);
             }
-            string json = System.Text.Json.JsonSerializer.Serialize(session);
-            File.WriteAllText(_sessionDirectory, json);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving session: {ex.Message}");
+            }
         }
 
         private async Task LoadSessionAsync()
         {
-            if (File.Exists(_sessionDirectory))
+            try
             {
-                string json = File.ReadAllText(_sessionDirectory);
-                var session = System.Text.Json.JsonSerializer.Deserialize<SessionData>(json);
-                foreach (var item in session.Torrents)
+                if (File.Exists(_sessionDirectory))
                 {
-                    await LoadFile(item.TorrentFile,
-                                    item.SavePath,
-                                    startOnAdd: item.State == TorrentState.Downloading);
+                    string json = await File.ReadAllTextAsync(_sessionDirectory);
+                    var session = System.Text.Json.JsonSerializer.Deserialize<SessionData>(json);
+                    
+                    if (session?.Torrents != null)
+                    {
+                        Console.WriteLine($"Loading {session.Torrents.Count} torrents from session");
+                        
+                        foreach (var item in session.Torrents)
+                        {
+                            try
+                            {
+                                await LoadFile(item.TorrentFile,
+                                              item.SavePath,
+                                              startOnAdd: item.State == TorrentState.Downloading);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error loading torrent from session {item.TorrentFile}: {ex.Message}");
+                            }
+                        }
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading session: {ex.Message}");
+            }
         }
-
     }
 }

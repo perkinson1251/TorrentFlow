@@ -67,14 +67,17 @@ namespace TorrentFlow.Services
 
         public async Task<TorrentManager> StartTorrentAsync(Torrent torrent, string savePath, bool startOnAdd)
         {
+            // Перевіряємо чи торент вже існує за назвою
             if (activeTorrents.ContainsKey(torrent.Name))
             {
                 return activeTorrents[torrent.Name];
             }
 
+            // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже зареєстрований в engine
             var existingManager = engine.Torrents.FirstOrDefault(t => t.Torrent?.Name == torrent.Name);
             if (existingManager != null)
             {
+                // Якщо торент знайдено в engine, але не в activeTorrents, додаємо його назад
                 activeTorrents[torrent.Name] = existingManager;
                 return existingManager;
             }
@@ -166,6 +169,7 @@ namespace TorrentFlow.Services
                     }
                 }
 
+                // ВИПРАВЛЕННЯ: Видаляємо з activeTorrents ПІСЛЯ видалення з engine
                 // activeTorrents.Remove(torrentName); // Перенесено вниз
                 
                 if(manager.State != TorrentState.Stopping && manager.State != TorrentState.Stopped)
@@ -173,8 +177,10 @@ namespace TorrentFlow.Services
                     await manager.StopAsync(); // Ensure torrent is stopped before removing
                 }
                 
+                // ВИПРАВЛЕННЯ: Спочатку видаляємо з engine, потім з локального словника
                 await engine.RemoveAsync(manager); // Remove from engine FIRST
                 
+                // Тепер видаляємо з локального словника
                 activeTorrents.Remove(torrentName);
                 
                 // Optionally delete downloaded files
@@ -227,12 +233,22 @@ namespace TorrentFlow.Services
             return (float)(activeTorrents.ContainsKey(torrentName) ? activeTorrents[torrentName].Progress : 0f);
         }
 
+        public Dictionary<string, TorrentManager> GetAllTorrents()
+        {
+            return activeTorrents;
+        }
+
         public async Task SaveAllTorrentsStateAsync()
         {
             foreach (var kvp in activeTorrents)
             {
                 var manager = kvp.Value;
-                if (manager.State != TorrentState.Stopped && manager.State != TorrentState.Error) // Only save if it makes sense
+                // ВИПРАВЛЕННЯ: Зберігаємо fast resume тільки для торентів, які мають валідні дані
+                if (manager.State != TorrentState.Stopped && 
+                    manager.State != TorrentState.Error && 
+                    manager.State != TorrentState.Stopping &&
+                    manager.State != TorrentState.Hashing &&
+                    manager.Progress > 0.0) // Зберігаємо тільки якщо є прогрес
                 {
                     try
                     {
@@ -241,7 +257,11 @@ namespace TorrentFlow.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error saving fast resume for {kvp.Key}: {ex.Message}");
+                        // Логуємо помилку тільки якщо це не стандартна помилка з битфілдом
+                        if (!ex.Message.Contains("bitfield") && !ex.Message.Contains("unhashed"))
+                        {
+                            Console.WriteLine($"Error saving fast resume for {kvp.Key}: {ex.Message}");
+                        }
                     }
                 }
             }
