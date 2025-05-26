@@ -1,13 +1,12 @@
 using Avalonia.Controls;
 
-namespace TorrentFlow
+namespace TorrentFlow;
+
+public partial class LoadingDialog : Window
 {
-    public partial class LoadingDialog : Window
+    public LoadingDialog(Window owner)
     {
-        public LoadingDialog(Window owner)
-        {
-            InitializeComponent();
-            this.Owner = owner;
-        }
+        InitializeComponent();
+        Owner = owner;
     }
 }

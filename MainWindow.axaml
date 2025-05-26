@@ -149,7 +149,6 @@
 
                                     <Border Grid.Column="1" Background="{DynamicResource SystemAccentColor}"
                                             CornerRadius="12" Padding="8,4">
-                                        <!-- Використовуємо новий конвертер для українських назв -->
                                         <TextBlock Text="{Binding Status, Converter={StaticResource TorrentStatusConverter}}"
                                                    Foreground="White" FontSize="12" FontWeight="SemiBold" />
                                     </Border>

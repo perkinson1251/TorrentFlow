@@ -101,9 +101,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             if (!string.IsNullOrEmpty(localPath))
                 TempDefaultSaveLocation = localPath;
             else
-                // Fallback or error if a local path couldn't be obtained
                 Console.WriteLine($"Could not retrieve a local path for the selected folder: {result[0].Name}");
-            // Optionally show a message to the user
         }
     }
 

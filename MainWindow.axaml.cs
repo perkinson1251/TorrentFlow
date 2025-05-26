@@ -123,7 +123,6 @@ public partial class MainWindow : Window
 
             torrent = Torrent.Load(tempFilePath);
 
-            // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI
             if (Torrents.Any(t => t.Name == torrent.Name))
             {
                 ShowWarning($"The torrent \"{torrent.Name}\" is already downloading.");
@@ -142,7 +141,6 @@ public partial class MainWindow : Window
             {
                 var torrentManager = await _torrentManager.StartTorrentAsync(torrent, savePath, startOnAdd);
 
-                // ВИПРАВЛЕННЯ: Перевіряємо чи торент вже існує в UI перед додаванням
                 if (!Torrents.Any(t => t.Name == torrent.Name))
                 {
                     var torrentView = new TorrentView(torrentManager);
@@ -240,7 +238,6 @@ public partial class MainWindow : Window
             torrent.UpdateSpeeds();
         }
 
-        // ВИПРАВЛЕННЯ: Зберігаємо fast resume рідше і тільки для активних торентів
         await _torrentManager.SaveAllTorrentsStateAsync();
         await SaveSessionAsync();
     }

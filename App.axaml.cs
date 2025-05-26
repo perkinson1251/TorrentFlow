@@ -12,7 +12,6 @@ using System.Linq;
 using System.Windows.Input;
 using TorrentFlow.Enums;
 using TorrentFlow.Services;
-using TorrentFlow.Data;
 
 namespace TorrentFlow;
 

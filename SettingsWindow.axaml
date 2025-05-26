@@ -7,14 +7,13 @@
         Width="600" Height="500"
         CanResize="False"
         Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-        Icon="/Assets/settings_icon.ico">
+        Icon="/Assets/icon.ico">
 
     <Window.Resources>
         <local:EnumDescriptionConverter x:Key="EnumToDescriptionConverter" />
     </Window.Resources>
 
     <Window.Styles>
-        <!-- Стиль для секций настроек -->
         <Style Selector="Border.settings-section">
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltMediumBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
@@ -24,7 +23,6 @@
             <Setter Property="Margin" Value="0,0,0,16" />
         </Style>
 
-        <!-- Заголовки секций -->
         <Style Selector="TextBlock.section-title">
             <Setter Property="FontSize" Value="18" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -32,21 +30,18 @@
             <Setter Property="Margin" Value="0,0,0,16" />
         </Style>
 
-        <!-- Подписи полей -->
         <Style Selector="TextBlock.field-label">
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Margin" Value="0,0,0,8" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
         </Style>
 
-        <!-- Описания полей -->
         <Style Selector="TextBlock.field-description">
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
             <Setter Property="Margin" Value="0,4,0,0" />
         </Style>
 
-        <!-- Стиль для текстовых полей -->
         <Style Selector="TextBox.settings-textbox">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="12,10" />
@@ -55,7 +50,6 @@
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
 
-        <!-- Стиль для комбобоксов -->
         <Style Selector="ComboBox.settings-combobox">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="12,10" />
@@ -63,7 +57,6 @@
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
 
-        <!-- Стиль для кнопок -->
         <Style Selector="Button.settings-button">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="16,10" />
@@ -108,7 +101,6 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Заголовок -->
         <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                 Padding="24,20" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                 BorderThickness="0,0,0,1">
@@ -121,11 +113,9 @@
             </StackPanel>
         </Border>
 
-        <!-- Основной контент -->
         <ScrollViewer Grid.Row="1" Padding="24">
             <StackPanel Spacing="0">
 
-                <!-- Секция загрузок -->
                 <Border Classes="settings-section">
                     <StackPanel>
                         <TextBlock Text="📁 Download Settings" Classes="section-title" />
@@ -148,7 +138,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Секция скорости -->
                 <Border Classes="settings-section">
                     <StackPanel>
                         <TextBlock Text="🚀 Speed Settings" Classes="section-title" />
@@ -162,7 +151,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Секция внешнего вида -->
                 <Border Classes="settings-section">
                     <StackPanel>
                         <TextBlock Text="🎨 Appearance" Classes="section-title" />

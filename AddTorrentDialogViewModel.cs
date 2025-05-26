@@ -1,43 +1,42 @@
 using System.ComponentModel;
 
-namespace TorrentFlow
+namespace TorrentFlow;
+
+public class AddTorrentDialogViewModel : INotifyPropertyChanged
 {
-    public class AddTorrentDialogViewModel : INotifyPropertyChanged
+    private string _selectedDirectory;
+    private string _torrentName;
+
+    public string TorrentName
     {
-        private string _selectedDirectory;
-        private string _torrentName;
-
-        public string TorrentName
+        get => _torrentName;
+        set
         {
-            get => _torrentName;
-            set
+            if (_torrentName != value)
             {
-                if (_torrentName != value)
-                {
-                    _torrentName = value;
-                    OnPropertyChanged(nameof(TorrentName));
-                }
+                _torrentName = value;
+                OnPropertyChanged(nameof(TorrentName));
             }
         }
+    }
 
-        public string SelectedDirectory
+    public string SelectedDirectory
+    {
+        get => _selectedDirectory;
+        set
         {
-            get => _selectedDirectory;
-            set
+            if (_selectedDirectory != value)
             {
-                if (_selectedDirectory != value)
-                {
-                    _selectedDirectory = value;
-                    OnPropertyChanged(nameof(SelectedDirectory));
-                }
+                _selectedDirectory = value;
+                OnPropertyChanged(nameof(SelectedDirectory));
             }
         }
+    }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+    public event PropertyChangedEventHandler PropertyChanged;
 
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+    protected virtual void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

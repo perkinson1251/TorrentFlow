@@ -1,14 +1,10 @@
 ﻿using System.ComponentModel;
 
-namespace TorrentFlow.Enums
+namespace TorrentFlow.Enums;
+
+public enum ThemeType
 {
-    public enum ThemeType
-    {
-        [Description("System Default")]
-        Default = 0,
-        [Description("Light")]
-        Light = 1,
-        [Description("Dark")]
-        Dark = 2
-    }
+    [Description("System Default")] Default = 0,
+    [Description("Light")] Light = 1,
+    [Description("Dark")] Dark = 2
 }

@@ -33,6 +33,5 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
     <PackageReference Include="MonoTorrent" Version="3.0.2" />
     <AvaloniaResource Include="Assets/icon.ico" />
-    <AvaloniaResource Include="Assets/settings_icon.ico" />
   </ItemGroup>
 </Project>
