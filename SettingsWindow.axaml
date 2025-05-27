@@ -143,7 +143,7 @@
                         <TextBlock Text="🚀 Speed Settings" Classes="section-title" />
 
                         <TextBlock Text="Maximum Download Speed (KB/s)" Classes="field-label" />
-                        <TextBox Text="{Binding TempMaxDownloadSpeedKBps, Mode=TwoWay}"
+                        <TextBox Text="{Binding TempMaxDownloadSpeedKBpsRaw, Mode=TwoWay}"
                                  Classes="settings-textbox"
                                  Watermark="0 for unlimited" />
                         <TextBlock Text="Set to 0 for unlimited download speed. Higher values limit bandwidth usage."

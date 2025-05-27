@@ -35,16 +35,16 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private int _tempMaxDownloadSpeedKBps;
+    private string _tempMaxDownloadSpeedKBpsRaw;
 
-    public int TempMaxDownloadSpeedKBps
+    public string TempMaxDownloadSpeedKBpsRaw
     {
-        get => _tempMaxDownloadSpeedKBps;
+        get => _tempMaxDownloadSpeedKBpsRaw;
         set
         {
-            if (_tempMaxDownloadSpeedKBps != value)
+            if (_tempMaxDownloadSpeedKBpsRaw != value)
             {
-                _tempMaxDownloadSpeedKBps = value;
+                _tempMaxDownloadSpeedKBpsRaw = value;
                 OnPropertyChanged();
             }
         }
@@ -79,7 +79,8 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     {
         var settings = _settingsService.GetSettings();
         TempDefaultSaveLocation = settings.DefaultSaveLocation;
-        TempMaxDownloadSpeedKBps = settings.MaxDownloadSpeedKBps;
+        // Конвертуємо int в string дл відображення
+        TempMaxDownloadSpeedKBpsRaw = settings.MaxDownloadSpeedKBps.ToString(); //
         TempSelectedTheme = settings.SelectedTheme;
     }
 
@@ -109,7 +110,16 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     {
         var settings = _settingsService.GetSettings();
         settings.DefaultSaveLocation = TempDefaultSaveLocation;
-        settings.MaxDownloadSpeedKBps = TempMaxDownloadSpeedKBps;
+
+        if (int.TryParse(TempMaxDownloadSpeedKBpsRaw, out int parsedSpeed))
+        {
+            settings.MaxDownloadSpeedKBps = parsedSpeed;
+        }
+        else
+        {
+            settings.MaxDownloadSpeedKBps = 0;
+        }
+
         settings.SelectedTheme = TempSelectedTheme;
 
         await _settingsService.UpdateSettings(settings);
