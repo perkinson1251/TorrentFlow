@@ -27,7 +27,9 @@ public class TorrentManagerService
         var settingsBuilder = new EngineSettingsBuilder
         {
             MaximumDownloadRate = maxDownloadSpeedKBps * 1024,
-            CacheDirectory = _fastResumeDirectory
+            CacheDirectory = _fastResumeDirectory,
+            AllowPortForwarding = true,
+            AllowLocalPeerDiscovery = true
         };
 
         var newEngineSettings = settingsBuilder.ToSettings();
@@ -51,6 +53,7 @@ public class TorrentManagerService
 
     public async Task<byte[]> LoadMagneticLinkMetadata(string link)
     {
+        if (engine == null) await InitializeEngine(currentDownloadSpeedLimit / 1024);
         var magnetLink = MagnetLink.Parse(link);
         var metadataMemory = await engine.DownloadMetadataAsync(magnetLink, CancellationToken.None);
 
@@ -60,49 +63,91 @@ public class TorrentManagerService
 
     public async Task<TorrentManager> StartTorrentAsync(Torrent torrent, string savePath, bool startOnAdd)
     {
-        if (activeTorrents.ContainsKey(torrent.Name)) return activeTorrents[torrent.Name];
+        if (engine == null) await InitializeEngine(currentDownloadSpeedLimit / 1024);
 
-        var existingManager = engine.Torrents.FirstOrDefault(t => t.Torrent?.Name == torrent.Name);
-        if (existingManager != null)
+        if (activeTorrents.TryGetValue(torrent.Name, out var managerFromDict))
         {
-            activeTorrents[torrent.Name] = existingManager;
-            return existingManager;
+            if (startOnAdd && managerFromDict.State != TorrentState.Downloading &&
+                managerFromDict.State != TorrentState.Seeding && managerFromDict.State != TorrentState.Hashing)
+            {
+                Console.WriteLine($"Torrent '{torrent.Name}' found in dictionary, ensuring it is started.");
+                await managerFromDict.StartAsync();
+            }
+
+            return managerFromDict;
         }
 
+        var managerFromEngine =
+            engine.Torrents.FirstOrDefault(t =>
+                t.Torrent?.Name == torrent.Name);
+        if (managerFromEngine != null)
+        {
+            Console.WriteLine($"Torrent '{torrent.Name}' found in engine, adding to activeTorrents dictionary.");
+            activeTorrents[torrent.Name] = managerFromEngine;
+            if (startOnAdd && managerFromEngine.State != TorrentState.Downloading &&
+                managerFromEngine.State != TorrentState.Seeding && managerFromEngine.State != TorrentState.Hashing)
+            {
+                Console.WriteLine($"Ensuring torrent '{torrent.Name}' from engine is started.");
+                await managerFromEngine.StartAsync();
+            }
+
+            return managerFromEngine;
+        }
+
+        Console.WriteLine($"Adding new torrent '{torrent.Name}' to engine.");
         var fastResumePath = GetFastResumeFilePath(torrent.Name);
-        var torrentSettings = new TorrentSettingsBuilder().ToSettings();
+        var torrentSettings = new TorrentSettingsBuilder
+        {
+            CreateContainingDirectory = true
+        }.ToSettings();
+
         TorrentManager manager;
+
+        manager = await engine.AddAsync(torrent, savePath, torrentSettings);
+        Console.WriteLine($"Torrent '{torrent.Name}' added to engine. State: {manager.State}");
 
         if (File.Exists(fastResumePath))
         {
-            manager = await engine.AddAsync(torrent, savePath, torrentSettings);
+            Console.WriteLine($"Attempting to load fast resume for '{torrent.Name}'.");
             try
             {
                 using (var stream = File.OpenRead(fastResumePath))
                 {
-                    if (FastResume.TryLoad(stream, out var output)) await manager.LoadFastResumeAsync(output);
+                    if (FastResume.TryLoad(stream, out var output))
+                    {
+                        await manager.LoadFastResumeAsync(output);
+                        Console.WriteLine(
+                            $"Fast resume loaded for '{torrent.Name}'. State after fast resume: {manager.State}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to parse fast resume data for '{torrent.Name}'.");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading fast resume for {torrent.Name}: {ex.Message}");
+                Console.WriteLine(
+                    $"Error loading fast resume for {torrent.Name}: {ex.Message}. Proceeding without fast resume.");
             }
-        }
-        else
-        {
-            manager = await engine.AddAsync(torrent, savePath, torrentSettings);
         }
 
         activeTorrents[torrent.Name] = manager;
 
         if (startOnAdd)
         {
-            await manager.HashCheckAsync(true);
-            if (manager.State != TorrentState.Hashing) await manager.StartAsync();
+            Console.WriteLine(
+                $"Starting torrent '{torrent.Name}' as per startOnAdd=true. Current state before start: {manager.State}");
+            await manager.StartAsync();
+            Console.WriteLine($"Torrent '{torrent.Name}' start initiated. State after StartAsync: {manager.State}");
         }
         else
         {
+            Console.WriteLine(
+                $"Hashing torrent '{torrent.Name}' without starting as per startOnAdd=false. Current state: {manager.State}");
             await manager.HashCheckAsync(false);
+            Console.WriteLine(
+                $"Torrent '{torrent.Name}' hash check initiated. State after HashCheckAsync(false): {manager.State}");
         }
 
         return manager;
@@ -112,25 +157,42 @@ public class TorrentManagerService
     {
         if (activeTorrents.TryGetValue(torrentName, out var manager))
             if (manager.State != TorrentState.Downloading && manager.State != TorrentState.Seeding)
+            {
+                Console.WriteLine($"Resuming torrent '{torrentName}'. Current state: {manager.State}");
                 await manager.StartAsync();
+                Console.WriteLine($"Torrent '{torrentName}' resume initiated. State after StartAsync: {manager.State}");
+            }
     }
 
     public async Task PauseTorrentAsync(string torrentName)
     {
         if (activeTorrents.TryGetValue(torrentName, out var manager))
             if (manager.State == TorrentState.Downloading || manager.State == TorrentState.Seeding)
+            {
+                Console.WriteLine($"Pausing torrent '{torrentName}'. Current state: {manager.State}");
                 await manager.PauseAsync();
+                Console.WriteLine($"Torrent '{torrentName}' pause initiated. State after PauseAsync: {manager.State}");
+            }
     }
 
     public async Task DeleteTorrentAsync(string torrentName, bool deleteFiles = false)
     {
-        if (activeTorrents.TryGetValue(torrentName, out var manager))
+        TorrentManager manager; 
+
+        if (activeTorrents.TryGetValue(torrentName, out manager))
         {
-            var fastResumePath = GetFastResumeFilePath(torrentName);
+            Console.WriteLine($"Deleting torrent '{torrentName}'. Delete files: {deleteFiles}");
+
+            activeTorrents.Remove(torrentName);
+            Console.WriteLine($"Torrent '{torrentName}' preemptively removed from activeTorrents dictionary.");
+
+            var fastResumePath =
+                GetFastResumeFilePath(torrentName);
             if (File.Exists(fastResumePath))
                 try
                 {
                     File.Delete(fastResumePath);
+                    Console.WriteLine($"Fast resume file deleted for '{torrentName}'.");
                 }
                 catch (Exception ex)
                 {
@@ -138,47 +200,43 @@ public class TorrentManagerService
                 }
 
             if (manager.State != TorrentState.Stopping && manager.State != TorrentState.Stopped)
-                await manager.StopAsync(); // Ensure torrent is stopped before removing
-
-            await engine.RemoveAsync(manager); // Remove from engine FIRST
-
-            activeTorrents.Remove(torrentName);
-
-            // Optionally delete downloaded files
-            if (deleteFiles)
+            {
+                Console.WriteLine(
+                    $"Stopping torrent '{torrentName}' before removal from engine. Current state: {manager.State}");
                 try
                 {
-                    // This requires knowing the save path and potentially multi-file structure
-                    // MonoTorrent.TorrentManager.SavePath
-                    var savePath = manager.SavePath;
-                    if (manager.Torrent != null && manager.Torrent.Files != null && manager.Torrent.Files.Count > 1)
-                    {
-                        // For multi-file torrents, the save path is a directory containing the files/folders.
-                        // The torrent name usually forms the root folder within this save path.
-                        var torrentRootFolder = Path.Combine(savePath, manager.Torrent.Name);
-                        if (Directory.Exists(torrentRootFolder))
-                            Directory.Delete(torrentRootFolder, true);
-                        else if (Directory.Exists(savePath) && manager.Torrent.Files.All(f =>
-                                     Path.GetDirectoryName(Path.Combine(savePath, f.Path)) == savePath))
-                            // Or if all files are directly in savePath (less common for multi-file)
-                            foreach (var file in manager.Torrent.Files)
-                                File.Delete(Path.Combine(savePath, file.Path));
-                    }
-                    else if (manager.Torrent != null && manager.Torrent.Files != null &&
-                             manager.Torrent.Files.Count == 1)
-                    {
-                        // Single file torrent
-                        File.Delete(Path.Combine(savePath, manager.Torrent.Files[0].Path));
-                    }
-                    else if (Directory.Exists(Path.Combine(savePath, manager.Torrent.Name))) // Fallback for directory
-                    {
-                        Directory.Delete(Path.Combine(savePath, manager.Torrent.Name), true);
-                    }
+                    await manager.StopAsync();
+                    Console.WriteLine($"Torrent '{torrentName}' stopped. State after StopAsync: {manager.State}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error deleting torrent files for {torrentName}: {ex.Message}");
+                    Console.WriteLine($"Error stopping torrent '{torrentName}': {ex.Message}");
                 }
+            }
+
+            if (engine != null && engine.Torrents.Contains(manager))
+            {
+                Console.WriteLine($"Removing torrent '{torrentName}' from engine.");
+                try
+                {
+                    var mode = deleteFiles ? RemoveMode.CacheDataAndDownloadedData : RemoveMode.CacheDataOnly;
+                    await engine.RemoveAsync(manager, mode);
+                    Console.WriteLine($"Torrent '{torrentName}' removed from engine with mode {mode}.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error removing torrent '{torrentName}' from engine: {ex.Message}");
+                }
+            }
+            else
+            {
+                Console.WriteLine(
+                    $"Torrent manager instance '{torrentName}' was not found in the engine's list, or engine is null. Skipping engine.RemoveAsync.");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Torrent '{torrentName}' not found in activeTorrents dictionary for deletion.");
         }
     }
 
@@ -194,33 +252,44 @@ public class TorrentManagerService
 
     public async Task SaveAllTorrentsStateAsync()
     {
-        foreach (var kvp in activeTorrents)
+        Console.WriteLine($"Saving state for {activeTorrents.Count} torrents.");
+        foreach (var kvp in activeTorrents.ToList())
         {
             var manager = kvp.Value;
             if (manager.State != TorrentState.Stopped &&
                 manager.State != TorrentState.Error &&
-                manager.State != TorrentState.Stopping &&
-                manager.State != TorrentState.Hashing &&
-                manager.Progress > 0.0)
+                manager.State != TorrentState.Stopping)
                 try
                 {
-                    var fastResume = await manager.SaveFastResumeAsync();
-                    await File.WriteAllBytesAsync(GetFastResumeFilePath(kvp.Key), fastResume.Encode());
+                    if (manager.Torrent != null && manager.Torrent.InfoHashes != null)
+                    {
+                        var fastResume = await manager.SaveFastResumeAsync();
+                        var filePath = GetFastResumeFilePath(kvp.Key);
+                        await File.WriteAllBytesAsync(filePath, fastResume.Encode());
+                        Console.WriteLine(
+                            $"Fast resume saved for {kvp.Key}. State: {manager.State}, Progress: {manager.Progress}");
+                    }
+                }
+                catch (InvalidOperationException ioe) when (ioe.Message.Contains(
+                                                                "The torrent is currently in the metadata download stage") ||
+                                                            ioe.Message.Contains("The torrent has not been hashed yet"))
+                {
+                    Console.WriteLine($"Skipping fast resume for {kvp.Key} (metadata/unhashed): {ioe.Message}");
                 }
                 catch (Exception ex)
                 {
-                    if (!ex.Message.Contains("bitfield") && !ex.Message.Contains("unhashed"))
-                        Console.WriteLine($"Error saving fast resume for {kvp.Key}: {ex.Message}");
+                    Console.WriteLine($"Error saving fast resume for {kvp.Key}: {ex.Message}");
                 }
         }
     }
 
-    private string GetFastResumeFilePath(string torrentName) // torrentName is manager.Torrent.Name
+    private string GetFastResumeFilePath(string torrentName)
     {
-        // Sanitize torrentName to be a valid file name
-        var invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-        var sanitizedTorrentName = torrentName;
-        foreach (var c in invalidChars) sanitizedTorrentName = sanitizedTorrentName.Replace(c.ToString(), "_");
+        var invalidChars = Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()).Distinct().ToArray();
+        var sanitizedTorrentName = new string(torrentName.Select(ch => invalidChars.Contains(ch) ? '_' : ch).ToArray());
+        const int maxFileNameLength = 255;
+        if (sanitizedTorrentName.Length > maxFileNameLength)
+            sanitizedTorrentName = sanitizedTorrentName.Substring(0, maxFileNameLength);
         return Path.Combine(_fastResumeDirectory, sanitizedTorrentName + ".resume");
     }
 }
