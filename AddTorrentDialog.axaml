@@ -3,7 +3,8 @@
         x:Class="TorrentFlow.AddTorrentDialog"
         Title="Add Torrent - TorrentFlow"
         Width="500"
-        SizeToContent="Height" CanResize="False"
+        Height="470"
+        CanResize="False"
         Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
         Icon="/Assets/icon.ico">
 
@@ -51,7 +52,6 @@
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
 
         <Style Selector="Button.dialog-button">
