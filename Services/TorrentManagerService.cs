@@ -240,16 +240,6 @@ public class TorrentManagerService
         }
     }
 
-    public float GetProgress(string torrentName)
-    {
-        return (float)(activeTorrents.ContainsKey(torrentName) ? activeTorrents[torrentName].Progress : 0f);
-    }
-
-    public Dictionary<string, TorrentManager> GetAllTorrents()
-    {
-        return activeTorrents;
-    }
-
     public async Task SaveAllTorrentsStateAsync()
     {
         Console.WriteLine($"Saving state for {activeTorrents.Count} torrents.");

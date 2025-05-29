@@ -90,14 +90,9 @@ public partial class MainWindow : Window
 
         if (filePath.StartsWith("magnet"))
         {
-            var loadingDialog = new LoadingDialog(this);
-            loadingDialog.Show();
-
             tempFilePath = filePath.Replace("%", "");
             var data = await _torrentManager.LoadMagneticLinkMetadata(tempFilePath);
             torrent = Torrent.Load(data);
-
-            loadingDialog.Close();
         }
         else if (filePath.EndsWith(".torrent"))
         {
