@@ -3,6 +3,7 @@
         xmlns:local="using:TorrentFlow"
         xmlns:enums="using:TorrentFlow.Enums"
         x:Class="TorrentFlow.SettingsWindow"
+        x:DataType="local:SettingsWindowViewModel"
         Title="Settings - TorrentFlow"
         Width="600" Height="500"
         CanResize="False"

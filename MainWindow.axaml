@@ -2,11 +2,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:TorrentFlow"
         x:Class="TorrentFlow.MainWindow"
-        Title="TorrentFlow"
+        x:DataType="local:MainWindowViewModel" Title="TorrentFlow"
         Width="1200" Height="700"
         MinWidth="800" MinHeight="500"
         SizeToContent="Manual"
-        x:DataType="local:MainWindow"
         Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
 
     <Window.Resources>
@@ -108,7 +107,7 @@
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="32">
                     <StackPanel>
-                        <TextBlock Text="{Binding Torrents.Count}" Classes="stat-value" />
+                        <TextBlock Text="{Binding TorrentsCount}" Classes="stat-value" />
                         <TextBlock Text="Active Torrents" Classes="stat-label" />
                     </StackPanel>
                 </StackPanel>
@@ -123,7 +122,7 @@
         </Border>
 
         <ScrollViewer Grid.Row="1" Padding="16"
-                      IsVisible="{Binding Torrents.Count, Converter={StaticResource InverseEmptyListVisibilityConverter}}">
+                      IsVisible="{Binding TorrentsCount, Converter={StaticResource InverseEmptyListVisibilityConverter}}">
             <ItemsControl ItemsSource="{Binding Torrents}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="local:TorrentView">
@@ -209,7 +208,7 @@
         </ScrollViewer>
 
         <Grid Grid.Row="1"
-              IsVisible="{Binding Torrents.Count, Converter={StaticResource EmptyListVisibilityConverter}}">
+              IsVisible="{Binding TorrentsCount, Converter={StaticResource EmptyListVisibilityConverter}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24">
                 <TextBlock Text="📁" FontSize="80" HorizontalAlignment="Center"
                            Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />

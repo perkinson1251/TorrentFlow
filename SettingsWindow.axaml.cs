@@ -2,86 +2,31 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Avalonia;
-using TorrentFlow.Enums;
 using TorrentFlow.Services;
 
 namespace TorrentFlow;
 
-public partial class SettingsWindow : Window, INotifyPropertyChanged
+public partial class SettingsWindow : Window
 {
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
     private readonly SettingsService _settingsService;
-    private string _tempDefaultSaveLocation;
-
-    public string TempDefaultSaveLocation
-    {
-        get => _tempDefaultSaveLocation;
-        set
-        {
-            if (_tempDefaultSaveLocation != value)
-            {
-                _tempDefaultSaveLocation = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    private string _tempMaxDownloadSpeedKBpsRaw;
-
-    public string TempMaxDownloadSpeedKBpsRaw
-    {
-        get => _tempMaxDownloadSpeedKBpsRaw;
-        set
-        {
-            if (_tempMaxDownloadSpeedKBpsRaw != value)
-            {
-                _tempMaxDownloadSpeedKBpsRaw = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    private ThemeType _tempSelectedTheme;
-
-    public ThemeType TempSelectedTheme
-    {
-        get => _tempSelectedTheme;
-        set
-        {
-            if (_tempSelectedTheme != value)
-            {
-                _tempSelectedTheme = value;
-                OnPropertyChanged();
-            }
-        }
-    }
-
-    public Array ThemeTypes => Enum.GetValues(typeof(ThemeType));
+    public SettingsWindowViewModel ViewModel { get; }
 
     public SettingsWindow(SettingsService settingsService)
     {
         _settingsService = settingsService;
-        DataContext = this;
+        ViewModel = new SettingsWindowViewModel();
+        DataContext = ViewModel;
         InitializeComponent();
-        LoadSettings();
+        LoadSettingsToViewModel();
     }
 
-    private void LoadSettings()
+    private void LoadSettingsToViewModel()
     {
         var settings = _settingsService.GetSettings();
-        TempDefaultSaveLocation = settings.DefaultSaveLocation;
-        // Конвертуємо int в string дл відображення
-        TempMaxDownloadSpeedKBpsRaw = settings.MaxDownloadSpeedKBps.ToString(); //
-        TempSelectedTheme = settings.SelectedTheme;
+        ViewModel.TempDefaultSaveLocation = settings.DefaultSaveLocation;
+        ViewModel.TempMaxDownloadSpeedKBpsRaw = settings.MaxDownloadSpeedKBps.ToString();
+        ViewModel.TempSelectedTheme = settings.SelectedTheme;
     }
 
     private async void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -100,7 +45,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
         {
             var localPath = result[0].TryGetLocalPath();
             if (!string.IsNullOrEmpty(localPath))
-                TempDefaultSaveLocation = localPath;
+                ViewModel.TempDefaultSaveLocation = localPath;
             else
                 Console.WriteLine($"Could not retrieve a local path for the selected folder: {result[0].Name}");
         }
@@ -109,9 +54,9 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         var settings = _settingsService.GetSettings();
-        settings.DefaultSaveLocation = TempDefaultSaveLocation;
+        settings.DefaultSaveLocation = ViewModel.TempDefaultSaveLocation;
 
-        if (int.TryParse(TempMaxDownloadSpeedKBpsRaw, out int parsedSpeed))
+        if (int.TryParse(ViewModel.TempMaxDownloadSpeedKBpsRaw, out int parsedSpeed))
         {
             settings.MaxDownloadSpeedKBps = parsedSpeed;
         }
@@ -120,7 +65,7 @@ public partial class SettingsWindow : Window, INotifyPropertyChanged
             settings.MaxDownloadSpeedKBps = 0;
         }
 
-        settings.SelectedTheme = TempSelectedTheme;
+        settings.SelectedTheme = ViewModel.TempSelectedTheme;
 
         await _settingsService.UpdateSettings(settings);
 
